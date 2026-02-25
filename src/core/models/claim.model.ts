@@ -24,4 +24,15 @@ export interface Claim {
   
   createdAt: string;
   createdBy: string;
+
+    statusHistory?: ClaimStatusChange[];
+  paymentReference?: string;
+  rejectionReason?: string;
+}
+
+interface ClaimStatusChange {
+  status: ClaimStatus;
+  changedBy: string;
+  changedAt: string;
+  notes?: string;
 }

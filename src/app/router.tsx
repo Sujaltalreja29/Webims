@@ -13,6 +13,11 @@ import { NewAppointmentPage } from '../features/appointments/pages/NewAppointmen
 import { ClinicalNotesPage } from '../features/clinical/pages/ClinicalNotesPage';
 import { NewEncounterPage } from '../features/clinical/pages/NewEncounterPage';
 import { BillingPage } from '../features/billing/pages/BillingPage';
+import { AppointmentDetailsPage } from '../features/appointments/pages/AppointmentDetailsPage';
+import { RescheduleAppointmentPage } from '../features/appointments/pages/RescheduleAppointmentPage';
+import { EncounterDetailsPage } from '../features/clinical/pages/EncounterDetailsPage';
+import { PrescriptionsPage } from '../features/pharmacy/pages/PrescriptionsPage';
+import { PrescriptionDetailsPage } from '../features/pharmacy/pages/PrescriptionDetailsPage';
 
 export const router = createBrowserRouter([
   {
@@ -62,37 +67,45 @@ export const router = createBrowserRouter([
         ]
       },
       // Appointments
-      {
-        path: 'appointments',
-        children: [
-          {
-            index: true,
-            element: <AppointmentsPage />
-          },
-          {
-            path: 'new',
-            element: <NewAppointmentPage />
-          }
-        ]
-      },
+{
+  path: 'appointments',
+  children: [
+    {
+      index: true,
+      element: <AppointmentsPage />
+    },
+    {
+      path: 'new',
+      element: <NewAppointmentPage />
+    },
+    {
+      path: ':id',
+      element: <AppointmentDetailsPage />
+    },
+    {
+      path: ':id/reschedule',
+      element: <RescheduleAppointmentPage />
+    }
+  ]
+},
       // Clinical
-      {
-        path: 'clinical',
-        children: [
-          {
-            index: true,
-            element: <ClinicalNotesPage />
-          },
-          {
-            path: 'new',
-            element: <NewEncounterPage />
-          },
-          {
-            path: ':id',
-            element: <div className="text-center py-12 text-slate-500">Encounter Details - Coming Soon</div>
-          }
-        ]
-      },
+{
+  path: 'clinical',
+  children: [
+    {
+      index: true,
+      element: <ClinicalNotesPage />
+    },
+    {
+      path: 'new',
+      element: <NewEncounterPage />
+    },
+    {
+      path: ':id',
+      element: <EncounterDetailsPage />
+    }
+  ]
+},
       // Billing
       {
         path: 'billing',
@@ -112,19 +125,23 @@ export const router = createBrowserRouter([
         ]
       },
       // Pharmacy (placeholder)
-      {
-        path: 'pharmacy',
-        children: [
-          {
-            path: 'prescriptions',
-            element: <div className="text-center py-12 text-slate-500">Pharmacy Prescriptions - Coming Soon</div>
-          },
-          {
-            path: 'inventory',
-            element: <div className="text-center py-12 text-slate-500">Pharmacy Inventory - Coming Soon</div>
-          }
-        ]
-      },
+{
+  path: 'pharmacy',
+  children: [
+    {
+      path: 'prescriptions',
+      element: <PrescriptionsPage />
+    },
+{
+  path: 'prescriptions/:id',
+  element: <PrescriptionDetailsPage />  // Replace the placeholder
+},
+    {
+      path: 'inventory',
+      element: <div className="text-center py-12 text-slate-500">Inventory - Coming Later</div>
+    }
+  ]
+},
       // LTC (placeholder)
       {
         path: 'ltc',

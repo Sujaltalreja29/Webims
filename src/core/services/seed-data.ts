@@ -1,4 +1,4 @@
-import { User, Patient, Appointment, Encounter, Prescription, Claim } from '../models';
+import { User, Patient, Appointment, Encounter, Prescription, Claim, LabResult } from '../models';
 import { storageService } from './storage.service';
 
 export const seedData = () => {
@@ -255,6 +255,7 @@ export const seedData = () => {
       diagnoses: ['Hypertension (High Blood Pressure)'],
       assessment: 'Blood pressure still elevated. Medication adjustment needed.',
       plan: 'Increase Lisinopril to 20mg daily. Follow-up in 2 weeks.',
+      status: 'Closed',
       followUpDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       createdAt: new Date().toISOString(),
       createdBy: 'user-1'
@@ -262,39 +263,154 @@ export const seedData = () => {
   ];
 
   // Seed Prescriptions
-  const prescriptions: Prescription[] = [
-    {
-      id: 'rx-1',
-      rxNumber: 'RX12345001',
-      patientId: 'patient-1',
-      providerId: 'user-1',
-      encounterId: 'enc-1',
-      medicationName: 'Lisinopril (Blood Pressure)',
-      dosage: '20mg',
-      frequency: 'Once daily',
-      duration: '30 days',
-      quantity: 30,
-      refills: 3,
-      status: 'Sent to Pharmacy',
-      createdAt: new Date().toISOString(),
-      createdBy: 'user-1'
-    },
-    {
-      id: 'rx-2',
-      rxNumber: 'RX12345002',
-      patientId: 'patient-2',
-      providerId: 'user-1',
-      medicationName: 'Metformin (Diabetes)',
-      dosage: '500mg',
-      frequency: 'Twice daily with meals',
-      duration: '90 days',
-      quantity: 180,
-      refills: 2,
-      status: 'Ready',
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      createdBy: 'user-1'
-    }
-  ];
+const prescriptions: Prescription[] = [
+  {
+    id: 'rx-001',
+    rxNumber: 'RX20240101001',
+    patientId: 'pat-001', // John Smith
+    providerId: 'user-doctor',
+    encounterId: 'enc-001',
+    medicationName: 'Lisinopril 10mg',
+    dosage: '10mg',
+    frequency: 'Once daily',
+    duration: '90 days',
+    quantity: 90,
+    refills: 3,
+    instructions: 'Take in the morning with water',
+    status: 'Dispensed',
+    dispensedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+    dispensedBy: 'Pharmacist Jane',
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'user-doctor'
+  },
+  {
+    id: 'rx-002',
+    rxNumber: 'RX20240101002',
+    patientId: 'pat-001', // John Smith
+    providerId: 'user-doctor',
+    encounterId: 'enc-001',
+    medicationName: 'Metformin 500mg',
+    dosage: '500mg',
+    frequency: 'Twice daily',
+    duration: '90 days',
+    quantity: 180,
+    refills: 3,
+    instructions: 'Take with meals',
+    status: 'Dispensed',
+    dispensedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    dispensedBy: 'Pharmacist Jane',
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'user-doctor'
+  },
+  {
+    id: 'rx-003',
+    rxNumber: 'RX20240101003',
+    patientId: 'pat-002', // Jane Doe
+    providerId: 'user-doctor',
+    encounterId: 'enc-002',
+    medicationName: 'Atorvastatin 20mg',
+    dosage: '20mg',
+    frequency: 'Once daily',
+    duration: '90 days',
+    quantity: 90,
+    refills: 2,
+    instructions: 'Take at bedtime',
+    status: 'Dispensed',
+    dispensedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    dispensedBy: 'Pharmacist Jane',
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'user-doctor'
+  },
+  {
+    id: 'rx-004',
+    rxNumber: 'RX20240115001',
+    patientId: 'pat-001', // John Smith
+    providerId: 'user-doctor',
+    medicationName: 'Aspirin 81mg',
+    dosage: '81mg',
+    frequency: 'Once daily',
+    duration: 'Ongoing',
+    quantity: 90,
+    refills: 5,
+    instructions: 'Take with food',
+    status: 'Ready',
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'user-doctor'
+  }
+];
+
+// Seed lab results
+const labResults: LabResult[] = [
+  {
+    id: 'lab-001',
+    labOrderNumber: 'LAB20240101001',
+    patientId: 'pat-001', // John Smith
+    encounterId: 'enc-001',
+    orderedBy: 'user-doctor',
+    orderedByName: 'Dr. Sarah Johnson',
+    testName: 'Hemoglobin A1C',
+    testType: 'Blood Test',
+    status: 'Completed',
+    result: '6.8%',
+    normalRange: '< 5.7%',
+    isAbnormal: true,
+    notes: 'Elevated - monitor diabetes management',
+    orderedDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    completedDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'user-doctor'
+  },
+  {
+    id: 'lab-002',
+    labOrderNumber: 'LAB20240101002',
+    patientId: 'pat-001', // John Smith
+    encounterId: 'enc-001',
+    orderedBy: 'user-doctor',
+    orderedByName: 'Dr. Sarah Johnson',
+    testName: 'Complete Blood Count (CBC)',
+    testType: 'Blood Test',
+    status: 'Completed',
+    result: 'Within normal limits',
+    normalRange: 'WBC: 4.5-11, RBC: 4.5-5.5',
+    isAbnormal: false,
+    orderedDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    completedDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'user-doctor'
+  },
+  {
+    id: 'lab-003',
+    labOrderNumber: 'LAB20240105001',
+    patientId: 'pat-001', // John Smith
+    orderedBy: 'user-doctor',
+    orderedByName: 'Dr. Sarah Johnson',
+    testName: 'Lipid Panel',
+    testType: 'Blood Test',
+    status: 'In Progress',
+    notes: 'Fasting required',
+    orderedDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'user-doctor'
+  },
+  {
+    id: 'lab-004',
+    labOrderNumber: 'LAB20240102001',
+    patientId: 'pat-002', // Jane Doe
+    encounterId: 'enc-002',
+    orderedBy: 'user-doctor',
+    orderedByName: 'Dr. Sarah Johnson',
+    testName: 'Thyroid Function Test (TSH, T3, T4)',
+    testType: 'Blood Test',
+    status: 'Completed',
+    result: 'TSH: 2.5 mIU/L (Normal)',
+    normalRange: 'TSH: 0.4-4.0 mIU/L',
+    isAbnormal: false,
+    orderedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    completedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'user-doctor'
+  }
+];
 
   // Seed Claims
   const claims: Claim[] = [
@@ -321,6 +437,7 @@ export const seedData = () => {
   storageService.set('encounters', encounters);
   storageService.set('prescriptions', prescriptions);
   storageService.set('claims', claims);
+    storageService.set('lab_results', labResults);
 
   console.log('✅ Seed data loaded successfully');
 };

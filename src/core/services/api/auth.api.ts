@@ -86,6 +86,11 @@ class AuthApiService {
     return this.getCurrentUser() !== null;
   }
 
+    async getUserById(userId: string): Promise<User | null> {
+    const users = await this.getAllUsers();
+    return users.find(u => u.id === userId) || null;
+  }
+
   getAllUsers(): User[] {
     return storageService.get<User[]>(this.usersKey) || [];
   }

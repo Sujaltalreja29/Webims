@@ -5,3 +5,4 @@ export * from './appointment.api';
 export * from './encounter.api';
 export * from './prescription.api';
 export * from './billing.api';
+export * from './lab-result.api';

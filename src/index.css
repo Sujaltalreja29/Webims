@@ -73,3 +73,31 @@
     @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
   }
 }
+
+/* Print styles */
+@media print {
+  body {
+    background: white !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:block {
+    display: block !important;
+  }
+
+  .print\:border-2 {
+    border-width: 2px !important;
+  }
+
+  .print\:break-before-page {
+    break-before: page;
+  }
+
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+}

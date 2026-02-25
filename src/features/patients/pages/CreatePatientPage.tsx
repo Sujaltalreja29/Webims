@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { patientApi } from '../../../core/services/api';
 import { useAuthStore } from '../../../store/authStore';
@@ -10,6 +10,33 @@ export const CreatePatientPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const [isLoading, setIsLoading] = useState(false);
+  const [nextPatientId, setNextPatientId] = useState<number>(1);
+
+  // ✅ Load existing patients to get next ID
+  useEffect(() => {
+    loadNextId();
+  }, []);
+
+  const loadNextId = async () => {
+    try {
+      const existingPatients = await patientApi.getAll();
+      
+      // Find the highest patient number
+      const patientNumbers = existingPatients
+        .map(p => {
+          const match = p.id.match(/^patient-(\d+)$/);
+          return match ? parseInt(match[1]) : 0;
+        })
+        .filter(num => num > 0);
+      
+      const maxId = patientNumbers.length > 0 ? Math.max(...patientNumbers) : 0;
+      setNextPatientId(maxId + 1);
+    } catch (error) {
+      console.error('Failed to load patients:', error);
+      // Fallback to timestamp if error
+      setNextPatientId(Date.now());
+    }
+  };
 
   const handleSubmit = async (data: Partial<Patient>) => {
     if (!user) return;
@@ -18,7 +45,7 @@ export const CreatePatientPage: React.FC = () => {
     try {
       const newPatient: Patient = {
         ...data,
-        id: `patient-${Date.now()}`,
+        id: `patient-${nextPatientId}`,  // ✅ Use counter-based ID
         mrn: patientApi.generateMRN(),
         createdAt: new Date().toISOString(),
         createdBy: user.id,

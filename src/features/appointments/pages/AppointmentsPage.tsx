@@ -300,10 +300,13 @@ export const AppointmentsPage: React.FC = () => {
     </span>
   )}
   <button
-    onClick={() => navigate(`/patients/${appt.patientId}`)}
+    onClick={(e) => {
+      e.stopPropagation();
+      navigate(`/appointments/${appt.id}`);
+    }}
     className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 text-sm font-medium"
   >
-    View Patient
+    View Details
   </button>
 </div>
                 </div>

@@ -11,9 +11,12 @@ class EncounterApiService extends BaseApiService<Encounter> {
     return `ENC${timestamp}`;
   }
 
-  getByPatient(patientId: string): Promise<Encounter[]> {
-    return this.search(e => e.patientId === patientId);
-  }
+async getByPatient(patientId: string): Promise<Encounter[]> {
+  const encounters = await this.search(e => e.patientId === patientId);
+  return encounters.sort((a, b) => 
+    new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime()
+  );
+}
 
   getByProvider(providerId: string): Promise<Encounter[]> {
     return this.search(e => e.providerId === providerId);
