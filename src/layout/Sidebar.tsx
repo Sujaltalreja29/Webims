@@ -13,7 +13,8 @@ import {
   Stethoscope,
   ClipboardList,
   Building2,
-  Package
+  Package,
+  RefreshCcw
 } from 'lucide-react';
 
 interface NavItem {
@@ -40,6 +41,7 @@ export const Sidebar: React.FC = () => {
         { path: '/patients', icon: Users, label: 'Patients', roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'] },
         { path: '/appointments', icon: Calendar, label: 'Appointments', roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'] },
         { path: '/clinical', icon: ClipboardList, label: 'Clinical Notes', roles: ['DOCTOR', 'NURSE', 'ADMIN'] },
+            { path: '/clinical/refill-requests', icon: RefreshCcw, label: 'Refill Requests', roles: ['DOCTOR', 'ADMIN'] }, // ✅ Add this
         { path: '/billing', icon: DollarSign, label: 'Billing', roles: ['BILLING', 'ADMIN'] }
       ]
     },

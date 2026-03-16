@@ -10,6 +10,9 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { RefreshCcw } from 'lucide-react'; // Add to imports
+import { RefillRequest } from '../../../core/models';
+import { refillRequestApi } from '../../../core/services/api'; // Add to imports
 
 export const PrescriptionDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,48 +26,105 @@ export const PrescriptionDetailsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showDispenseModal, setShowDispenseModal] = useState(false);
 
+  const [showRequestRefillModal, setShowRequestRefillModal] = useState(false);
+
   useEffect(() => {
     if (id) {
       loadData();
     }
   }, [id]);
 
-  const loadData = async () => {
-    if (!id) return;
+ const loadData = async () => {
+  if (!id) {
+    console.log('❌ No ID in URL params');
+    return;
+  }
 
-    try {
-      setLoading(true);
-      const rx = await prescriptionApi.getById(id);
+  console.log('🔍 Loading prescription with ID:', id);
 
-      if (!rx) {
-        toast.error('Prescription not found');
-        navigate('/pharmacy/prescriptions');
-        return;
-      }
+  try {
+    setLoading(true);
+    const rx = await prescriptionApi.getById(id);
 
-      setPrescription(rx);
+    console.log('📦 Prescription data received:', rx);
 
-      // Load related data
-      const [patientData, providerData] = await Promise.all([
-        patientApi.getById(rx.patientId),
-        authApi.getUserById(rx.providerId)
-      ]);
-
-      setPatient(patientData);
-      setProvider(providerData);
-
-      // Load encounter if exists
-      if (rx.encounterId) {
-        const encounterData = await encounterApi.getById(rx.encounterId);
-        setEncounter(encounterData);
-      }
-    } catch (error) {
-      console.error('Failed to load prescription:', error);
-      toast.error('Failed to load prescription details');
-    } finally {
-      setLoading(false);
+    if (!rx) {
+      console.log('❌ Prescription is null/undefined');
+      toast.error('Prescription not found');
+      navigate('/pharmacy/prescriptions');
+      return;
     }
-  };
+
+    setPrescription(rx);
+
+    // Load related data
+    console.log('👤 Loading patient with ID:', rx.patientId);
+    const [patientData, providerData] = await Promise.all([
+      patientApi.getById(rx.patientId),
+      authApi.getUserById(rx.providerId)
+    ]);
+
+    console.log('👤 Patient data received:', patientData);
+    console.log('👨‍⚕️ Provider data received:', providerData);
+
+    setPatient(patientData);
+    setProvider(providerData);
+
+    // Load encounter if exists
+    if (rx.encounterId) {
+      console.log('📋 Loading encounter with ID:', rx.encounterId);
+      const encounterData = await encounterApi.getById(rx.encounterId);
+      console.log('📋 Encounter data received:', encounterData);
+      setEncounter(encounterData);
+    }
+
+    console.log('✅ All data loaded successfully');
+  } catch (error) {
+    console.error('❌ Failed to load prescription:', error);
+    toast.error('Failed to load prescription details');
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const handleRequestRefill = async () => {
+  if (!prescription) return;
+  
+  // Check if prescription has refills
+  if (prescription.refills <= 0) {
+    toast.error('No refills remaining on this prescription');
+    return;
+  }
+  
+  // Check if prescription is dispensed
+  if (prescription.status !== 'Dispensed') {
+    toast.error('Can only request refill for dispensed prescriptions');
+    return;
+  }
+  
+  try {
+    const allRequests = await refillRequestApi.getAll();
+    const nextId = allRequests.length + 1;
+    const refillRequestNumber = `RFR${Date.now()}`;
+    
+    const newRequest: RefillRequest = {
+      id: `refill-req-${nextId}`,
+      refillRequestNumber,
+      originalPrescriptionId: prescription.id,
+      patientId: prescription.patientId,
+      medicationName: prescription.medicationName,
+      requestedDate: new Date().toISOString(),
+      status: 'Pending',
+      createdAt: new Date().toISOString()
+    };
+    
+    await refillRequestApi.create(newRequest);
+    toast.success('Refill request submitted to doctor for review');
+  } catch (error) {
+    console.error('Failed to request refill:', error);
+    toast.error('Failed to request refill');
+  }
+};
 
   const handleMarkReady = async () => {
     if (!prescription || !currentUser) return;
@@ -137,7 +197,7 @@ export const PrescriptionDetailsPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -183,6 +243,16 @@ export const PrescriptionDetailsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {prescription.status === 'Dispensed' && prescription.refills > 0 && (
+  <button
+    onClick={handleRequestRefill}
+    className="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+  >
+    <RefreshCcw size={18} className="mr-2" />
+    Request Refill
+  </button>
+)}
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

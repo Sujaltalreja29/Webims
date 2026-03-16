@@ -6,3 +6,6 @@ export * from './encounter.api';
 export * from './prescription.api';
 export * from './billing.api';
 export * from './lab-result.api';
+// Add these exports
+export * from './medication-inventory.api';
+export * from './refill-request.api';

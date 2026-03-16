@@ -18,6 +18,10 @@ import { RescheduleAppointmentPage } from '../features/appointments/pages/Resche
 import { EncounterDetailsPage } from '../features/clinical/pages/EncounterDetailsPage';
 import { PrescriptionsPage } from '../features/pharmacy/pages/PrescriptionsPage';
 import { PrescriptionDetailsPage } from '../features/pharmacy/pages/PrescriptionDetailsPage';
+import { InventoryPage } from '../features/pharmacy/pages/InventoryPage';
+import { AddEditMedicationPage } from '../features/pharmacy/pages/AddEditMedicationPage';
+import { MedicationDetailsPage } from '../features/pharmacy/pages/MedicationDetailsPage';
+import { RefillRequestsPage } from '../features/clinical/pages/RefillRequestsPage';
 
 export const router = createBrowserRouter([
   {
@@ -67,45 +71,49 @@ export const router = createBrowserRouter([
         ]
       },
       // Appointments
-{
-  path: 'appointments',
-  children: [
-    {
-      index: true,
-      element: <AppointmentsPage />
-    },
-    {
-      path: 'new',
-      element: <NewAppointmentPage />
-    },
-    {
-      path: ':id',
-      element: <AppointmentDetailsPage />
-    },
-    {
-      path: ':id/reschedule',
-      element: <RescheduleAppointmentPage />
-    }
-  ]
-},
+      {
+        path: 'appointments',
+        children: [
+          {
+            index: true,
+            element: <AppointmentsPage />
+          },
+          {
+            path: 'new',
+            element: <NewAppointmentPage />
+          },
+          {
+            path: ':id',
+            element: <AppointmentDetailsPage />
+          },
+          {
+            path: ':id/reschedule',
+            element: <RescheduleAppointmentPage />
+          }
+        ]
+      },
       // Clinical
-{
-  path: 'clinical',
-  children: [
-    {
-      index: true,
-      element: <ClinicalNotesPage />
-    },
-    {
-      path: 'new',
-      element: <NewEncounterPage />
-    },
-    {
-      path: ':id',
-      element: <EncounterDetailsPage />
+      {
+        path: 'clinical',
+        children: [
+          {
+            index: true,
+            element: <ClinicalNotesPage />
+          },
+          {
+            path: 'new',
+            element: <NewEncounterPage />
+          },
+          {
+            path: ':id',
+            element: <EncounterDetailsPage />
+          },
+              {
+      path: 'refill-requests',  // ✅ Add this
+      element: <RefillRequestsPage />
     }
-  ]
-},
+        ]
+      },
       // Billing
       {
         path: 'billing',
@@ -124,24 +132,36 @@ export const router = createBrowserRouter([
           }
         ]
       },
-      // Pharmacy (placeholder)
-{
-  path: 'pharmacy',
-  children: [
-    {
-      path: 'prescriptions',
-      element: <PrescriptionsPage />
-    },
-{
-  path: 'prescriptions/:id',
-  element: <PrescriptionDetailsPage />  // Replace the placeholder
-},
-    {
-      path: 'inventory',
-      element: <div className="text-center py-12 text-slate-500">Inventory - Coming Later</div>
-    }
-  ]
-},
+      // Pharmacy - ✅ FIXED: Removed duplicate MainLayout wrapper
+      {
+        path: 'pharmacy',
+        children: [
+          {
+            path: 'prescriptions',
+            element: <PrescriptionsPage />
+          },
+          {
+            path: 'prescriptions/:id',
+            element: <PrescriptionDetailsPage />
+          },
+          {
+            path: 'inventory',
+            element: <InventoryPage />
+          },
+          {
+            path: 'inventory/new',
+            element: <AddEditMedicationPage />
+          },
+          {
+            path: 'inventory/:id',
+            element: <MedicationDetailsPage />
+          },
+          {
+            path: 'inventory/:id/edit',
+            element: <AddEditMedicationPage />
+          }
+        ]
+      },
       // LTC (placeholder)
       {
         path: 'ltc',

@@ -1,5 +1,6 @@
-import { User, Patient, Appointment, Encounter, Prescription, Claim, LabResult } from '../models';
+import { User, Patient, Appointment, Encounter, Prescription, Claim, LabResult,RefillRequest } from '../models';
 import { storageService } from './storage.service';
+import type { MedicationInventory, StockTransaction } from '../models';
 
 export const seedData = () => {
   // Check if data already exists
@@ -263,80 +264,107 @@ export const seedData = () => {
   ];
 
   // Seed Prescriptions
-const prescriptions: Prescription[] = [
+ const prescriptions: Prescription[] = [
   {
     id: 'rx-001',
-    rxNumber: 'RX20240101001',
-    patientId: 'pat-001', // John Smith
-    providerId: 'user-doctor',
-    encounterId: 'enc-001',
-    medicationName: 'Lisinopril 10mg',
-    dosage: '10mg',
-    frequency: 'Once daily',
-    duration: '90 days',
-    quantity: 90,
-    refills: 3,
-    instructions: 'Take in the morning with water',
-    status: 'Dispensed',
-    dispensedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-    dispensedBy: 'Pharmacist Jane',
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    createdBy: 'user-doctor'
-  },
-  {
-    id: 'rx-002',
-    rxNumber: 'RX20240101002',
-    patientId: 'pat-001', // John Smith
-    providerId: 'user-doctor',
-    encounterId: 'enc-001',
-    medicationName: 'Metformin 500mg',
-    dosage: '500mg',
-    frequency: 'Twice daily',
-    duration: '90 days',
-    quantity: 180,
-    refills: 3,
-    instructions: 'Take with meals',
-    status: 'Dispensed',
-    dispensedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    dispensedBy: 'Pharmacist Jane',
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    createdBy: 'user-doctor'
-  },
-  {
-    id: 'rx-003',
-    rxNumber: 'RX20240101003',
-    patientId: 'pat-002', // Jane Doe
-    providerId: 'user-doctor',
-    encounterId: 'enc-002',
-    medicationName: 'Atorvastatin 20mg',
-    dosage: '20mg',
-    frequency: 'Once daily',
-    duration: '90 days',
-    quantity: 90,
-    refills: 2,
-    instructions: 'Take at bedtime',
-    status: 'Dispensed',
-    dispensedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    dispensedBy: 'Pharmacist Jane',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    createdBy: 'user-doctor'
-  },
-  {
-    id: 'rx-004',
     rxNumber: 'RX20240115001',
-    patientId: 'pat-001', // John Smith
-    providerId: 'user-doctor',
+    patientId: 'patient-1',  // ✅ Changed from 'pat-001' to 'patient-1'
+    providerId: 'user-2',    // ✅ Changed from 'user-doctor' to 'user-2' (doctor user)
     medicationName: 'Aspirin 81mg',
     dosage: '81mg',
     frequency: 'Once daily',
-    duration: 'Ongoing',
-    quantity: 90,
-    refills: 5,
+    duration: '30 days',
+    quantity: 30,
+    refills: 2,
     instructions: 'Take with food',
+    status: 'Dispensed',
+    dispensedAt: '2024-01-20T14:00:00Z',
+    dispensedBy: 'user-6',  // ✅ Pharmacist user ID
+    createdAt: '2024-01-15T10:00:00Z',
+    createdBy: 'user-2'
+  },
+  {
+    id: 'rx-002',
+    rxNumber: 'RX20240116002',
+    patientId: 'patient-2',  // ✅ Changed
+    providerId: 'user-2',    // ✅ Changed
+    medicationName: 'Lisinopril 10mg',
+    dosage: '10mg',
+    frequency: 'Once daily in the morning',
+    duration: '90 days',
+    quantity: 90,
+    refills: 3,
+    instructions: 'Take at the same time each day',
     status: 'Ready',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    createdBy: 'user-doctor'
-  }
+    createdAt: '2024-01-16T11:30:00Z',
+    createdBy: 'user-2'
+  },
+  {
+    id: 'rx-003',
+    rxNumber: 'RX20240118003',
+    patientId: 'patient-3',  // ✅ Changed
+    providerId: 'user-2',    // ✅ Changed
+    medicationName: 'Metformin 500mg',
+    dosage: '500mg',
+    frequency: 'Twice daily with meals',
+    duration: '90 days',
+    quantity: 180,
+    refills: 2,
+    instructions: 'Take with breakfast and dinner',
+    status: 'Sent to Pharmacy',
+    createdAt: '2024-01-18T09:15:00Z',
+    createdBy: 'user-2'
+  },
+  {
+    id: 'rx-004',
+    rxNumber: 'RX20240119004',
+    patientId: 'patient-4',  // ✅ Changed from 'pat-001'
+    providerId: 'user-2',    // ✅ Changed from 'user-doctor'
+    medicationName: 'Amoxicillin 500mg',
+    dosage: '500mg',
+    frequency: 'Three times daily',
+    duration: '10 days',
+    quantity: 30,
+    refills: 0,
+    instructions: 'Complete full course even if symptoms improve',
+    status: 'Sent to Pharmacy',
+    createdAt: '2024-01-19T14:45:00Z',
+    createdBy: 'user-2'
+  },
+  {
+    id: 'rx-005',
+    rxNumber: 'RX20240120005',
+    patientId: 'patient-1',  // ✅ Changed
+    providerId: 'user-2',    // ✅ Changed
+    medicationName: 'Omeprazole 20mg',
+    dosage: '20mg',
+    frequency: 'Once daily before breakfast',
+    duration: '30 days',
+    quantity: 30,
+    refills: 5,
+    instructions: 'Take 30 minutes before first meal',
+    status: 'Dispensed',
+    dispensedAt: '2024-01-21T10:30:00Z',
+    dispensedBy: 'user-6',
+    createdAt: '2024-01-20T08:00:00Z',
+    createdBy: 'user-2'
+  },
+  {
+  id: 'rx-6',
+  rxNumber: 'RX20240121006',
+  patientId: 'patient-2',
+  providerId: 'user-2',
+  medicationName: 'Lisinopril 10mg',
+  dosage: '10mg',
+  frequency: 'Once daily in the morning',
+  duration: '90 days',
+  quantity: 90,
+  refills: 2, // One less than original
+  instructions: 'Take at the same time each day',
+  status: 'Sent to Pharmacy',
+  createdAt: '2024-01-21T15:00:00Z',
+  createdBy: 'user-2'
+}
 ];
 
 // Seed lab results
@@ -412,6 +440,48 @@ const labResults: LabResult[] = [
   }
 ];
 
+// Add this after your other seed data
+ const seedRefillRequests: RefillRequest[] = [
+  {
+    id: 'refill-req-1',
+    refillRequestNumber: 'RFR1705920000001',
+    originalPrescriptionId: 'rx-1',
+    patientId: 'patient-1',
+    medicationName: 'Aspirin 81mg',
+    requestedDate: '2024-01-22T09:00:00Z',
+    status: 'Pending',
+    createdAt: '2024-01-22T09:00:00Z'
+  },
+  {
+    id: 'refill-req-2',
+    refillRequestNumber: 'RFR1705920000002',
+    originalPrescriptionId: 'rx-2',
+    patientId: 'patient-2',
+    medicationName: 'Lisinopril 10mg',
+    requestedDate: '2024-01-21T14:30:00Z',
+    status: 'Approved',
+    reviewedBy: 'user-2',
+    reviewedByName: 'Dr. John Smith',
+    reviewedDate: '2024-01-21T15:00:00Z',
+    newPrescriptionId: 'rx-6',
+    createdAt: '2024-01-21T14:30:00Z'
+  },
+  {
+    id: 'refill-req-3',
+    refillRequestNumber: 'RFR1705920000003',
+    originalPrescriptionId: 'rx-5',
+    patientId: 'patient-1',
+    medicationName: 'Omeprazole 20mg',
+    requestedDate: '2024-01-20T10:00:00Z',
+    status: 'Denied',
+    reviewedBy: 'user-2',
+    reviewedByName: 'Dr. John Smith',
+    reviewedDate: '2024-01-20T11:00:00Z',
+    denialReason: 'Patient needs follow-up appointment to evaluate continued need for medication',
+    createdAt: '2024-01-20T10:00:00Z'
+  }
+];
+
   // Seed Claims
   const claims: Claim[] = [
     {
@@ -430,6 +500,181 @@ const labResults: LabResult[] = [
     }
   ];
 
+ const seedMedicationInventory: MedicationInventory[] = [
+  {
+    id: 'med-1',
+    medicationName: 'Amoxicillin',
+    genericName: 'Amoxicillin',
+    dosageForm: 'Capsule',
+    strength: '500mg',
+    manufacturer: 'Pfizer',
+    ndc: '00093-4150-73',
+    stockQuantity: 450,
+    reorderLevel: 100,
+    reorderQuantity: 500,
+    unitPrice: 0.25,
+    expiryDate: '2025-12-31',
+    lotNumber: 'LOT2024-A1',
+    location: 'Shelf A-3',
+    isControlled: false,
+    lastRestocked: '2024-01-15',
+    createdAt: '2024-01-10T08:00:00Z',
+    updatedAt: '2024-01-15T10:30:00Z'
+  },
+  {
+    id: 'med-2',
+    medicationName: 'Lisinopril',
+    genericName: 'Lisinopril',
+    dosageForm: 'Tablet',
+    strength: '10mg',
+    manufacturer: 'Sandoz',
+    ndc: '00093-1530-01',
+    stockQuantity: 35,
+    reorderLevel: 50,
+    reorderQuantity: 300,
+    unitPrice: 0.15,
+    expiryDate: '2025-06-30',
+    lotNumber: 'LOT2024-B2',
+    location: 'Shelf B-1',
+    isControlled: false,
+    lastRestocked: '2024-01-20',
+    createdAt: '2024-01-10T08:00:00Z',
+    updatedAt: '2024-01-20T14:00:00Z'
+  },
+  {
+    id: 'med-3',
+    medicationName: 'Hydrocodone-Acetaminophen',
+    genericName: 'Hydrocodone-Acetaminophen',
+    dosageForm: 'Tablet',
+    strength: '5-325mg',
+    manufacturer: 'Actavis',
+    ndc: '00406-0512-01',
+    stockQuantity: 85,
+    reorderLevel: 50,
+    reorderQuantity: 200,
+    unitPrice: 1.50,
+    expiryDate: '2025-09-30',
+    lotNumber: 'LOT2024-C3',
+    location: 'Locked Cabinet 1',
+    isControlled: true,
+    lastRestocked: '2024-01-18',
+    createdAt: '2024-01-10T08:00:00Z',
+    updatedAt: '2024-01-18T09:15:00Z'
+  },
+  {
+    id: 'med-4',
+    medicationName: 'Metformin',
+    genericName: 'Metformin HCL',
+    dosageForm: 'Tablet',
+    strength: '500mg',
+    manufacturer: 'Teva',
+    ndc: '00093-7214-01',
+    stockQuantity: 0,
+    reorderLevel: 100,
+    reorderQuantity: 500,
+    unitPrice: 0.10,
+    expiryDate: '2025-11-30',
+    lotNumber: 'LOT2024-D4',
+    location: 'Shelf C-2',
+    isControlled: false,
+    createdAt: '2024-01-10T08:00:00Z',
+    updatedAt: '2024-01-25T11:00:00Z'
+  },
+  {
+    id: 'med-5',
+    medicationName: 'Albuterol',
+    genericName: 'Albuterol Sulfate',
+    dosageForm: 'Inhaler',
+    strength: '90mcg',
+    manufacturer: 'GSK',
+    ndc: '00173-0682-20',
+    stockQuantity: 25,
+    reorderLevel: 20,
+    reorderQuantity: 100,
+    unitPrice: 15.00,
+    expiryDate: '2024-03-31',
+    lotNumber: 'LOT2023-E5',
+    location: 'Refrigerator 1',
+    isControlled: false,
+    lastRestocked: '2023-12-10',
+    createdAt: '2023-12-01T08:00:00Z',
+    updatedAt: '2023-12-10T16:00:00Z'
+  },
+  {
+    id: 'med-6',
+    medicationName: 'Omeprazole',
+    genericName: 'Omeprazole',
+    dosageForm: 'Capsule',
+    strength: '20mg',
+    manufacturer: 'Dr. Reddy',
+    ndc: '55111-0393-30',
+    stockQuantity: 180,
+    reorderLevel: 75,
+    reorderQuantity: 300,
+    unitPrice: 0.20,
+    expiryDate: '2026-01-31',
+    lotNumber: 'LOT2024-F6',
+    location: 'Shelf A-5',
+    isControlled: false,
+    lastRestocked: '2024-01-22',
+    createdAt: '2024-01-10T08:00:00Z',
+    updatedAt: '2024-01-22T13:45:00Z'
+  }
+];
+
+const seedStockTransactions: StockTransaction[] = [
+  {
+    id: 'stock-tx-1',
+    medicationId: 'med-1',
+    transactionType: 'Received',
+    quantityChange: 500,
+    quantityBefore: 0,
+    quantityAfter: 500,
+    reason: 'Initial stock',
+    performedBy: 'user-6',
+    performedByName: 'Sarah Wilson',
+    notes: 'First shipment received',
+    createdAt: '2024-01-15T10:30:00Z'
+  },
+  {
+    id: 'stock-tx-2',
+    medicationId: 'med-1',
+    transactionType: 'Dispensed',
+    quantityChange: -50,
+    quantityBefore: 500,
+    quantityAfter: 450,
+    prescriptionId: 'rx-1',
+    performedBy: 'user-6',
+    performedByName: 'Sarah Wilson',
+    notes: 'Dispensed for prescription rx-1',
+    createdAt: '2024-01-20T14:00:00Z'
+  },
+  {
+    id: 'stock-tx-3',
+    medicationId: 'med-2',
+    transactionType: 'Received',
+    quantityChange: 300,
+    quantityBefore: 0,
+    quantityAfter: 300,
+    reason: 'Initial stock',
+    performedBy: 'user-6',
+    performedByName: 'Sarah Wilson',
+    createdAt: '2024-01-20T14:00:00Z'
+  },
+  {
+    id: 'stock-tx-4',
+    medicationId: 'med-2',
+    transactionType: 'Dispensed',
+    quantityChange: -265,
+    quantityBefore: 300,
+    quantityAfter: 35,
+    performedBy: 'user-6',
+    performedByName: 'Sarah Wilson',
+    notes: 'Multiple prescriptions dispensed',
+    createdAt: '2024-01-25T11:00:00Z'
+  }
+];
+
   // Save to localStorage
   storageService.set('users', users);
   storageService.set('patients', patients);
@@ -438,6 +683,14 @@ const labResults: LabResult[] = [
   storageService.set('prescriptions', prescriptions);
   storageService.set('claims', claims);
     storageService.set('lab_results', labResults);
+    // ✅ ADD THESE NEW LINES:
+storageService.set('medication_inventory', seedMedicationInventory);
+storageService.set('stock_transactions', seedStockTransactions);
+
+// Then in the initializeData function, add:
+storageService.set('refill_requests', seedRefillRequests);
+
+
 
   console.log('✅ Seed data loaded successfully');
 };
