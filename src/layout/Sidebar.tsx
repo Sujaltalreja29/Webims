@@ -14,7 +14,8 @@ import {
   ClipboardList,
   Building2,
   Package,
-  RefreshCcw
+  RefreshCcw,
+  FlaskConical
 } from 'lucide-react';
 
 interface NavItem {
@@ -41,7 +42,13 @@ export const Sidebar: React.FC = () => {
         { path: '/patients', icon: Users, label: 'Patients', roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'] },
         { path: '/appointments', icon: Calendar, label: 'Appointments', roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'] },
         { path: '/clinical', icon: ClipboardList, label: 'Clinical Notes', roles: ['DOCTOR', 'NURSE', 'ADMIN'] },
-            { path: '/clinical/refill-requests', icon: RefreshCcw, label: 'Refill Requests', roles: ['DOCTOR', 'ADMIN'] }, // ✅ Add this
+        {
+  path: '/lab',
+  icon: FlaskConical, 
+  label: 'Lab Results',
+  roles: ['DOCTOR', 'NURSE', 'ADMIN']
+},
+            { path: '/clinical/refill-requests', icon: RefreshCcw, label: 'Refill Requests', roles: ['DOCTOR', 'ADMIN'] },
         { path: '/billing', icon: DollarSign, label: 'Billing', roles: ['BILLING', 'ADMIN'] }
       ]
     },
@@ -54,15 +61,25 @@ export const Sidebar: React.FC = () => {
         { path: '/pharmacy/inventory', icon: Package, label: 'Inventory', roles: ['PHARMACIST', 'ADMIN'] }
       ]
     },
+{
+  id: 'ltc',
+  label: 'CareCatalyst (LTC)',
+  icon: Building2,
+  items: [
     {
-      id: 'ltc',
-      label: 'CareCatalyst (LTC)',
-      icon: Building2,
-      items: [
-        { path: '/ltc/residents', icon: Users, label: 'Residents', roles: ['NURSE', 'ADMIN'], badge: 'Soon' },
-        { path: '/ltc/care-notes', icon: FileText, label: 'Care Notes', roles: ['NURSE', 'ADMIN'], badge: 'Soon' }
-      ]
+      path: '/ltc/residents',
+      icon: Users,
+      label: 'Residents',
+      roles: ['NURSE', 'DOCTOR', 'ADMIN']
+    },
+    {
+      path: '/ltc/care-notes',
+      icon: FileText,
+      label: 'Care Notes',
+      roles: ['NURSE', 'DOCTOR', 'ADMIN']
     }
+  ]
+},
   ];
 
   const canAccessRoute = (roles: string[]) => {

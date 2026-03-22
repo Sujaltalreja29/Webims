@@ -22,6 +22,18 @@ import { InventoryPage } from '../features/pharmacy/pages/InventoryPage';
 import { AddEditMedicationPage } from '../features/pharmacy/pages/AddEditMedicationPage';
 import { MedicationDetailsPage } from '../features/pharmacy/pages/MedicationDetailsPage';
 import { RefillRequestsPage } from '../features/clinical/pages/RefillRequestsPage';
+import { NewClaimPage } from '../features/billing/pages/NewClaimPage';
+import { ClaimDetailsPage } from '../features/billing/pages/ClaimDetailsPage';
+import { LabResultsPage }      from '../features/lab/pages/LabResultsPage';
+import { EnterResultsPage }    from '../features/lab/pages/EnterResultsPage';
+import { LabResultDetailsPage } from '../features/lab/pages/LabResultDetailsPage';
+import { ResidentsPage }       from '../features/ltc/pages/ResidentsPage';
+import { AddEditResidentPage } from '../features/ltc/pages/AddEditResidentPage';
+import { ResidentDetailsPage } from '../features/ltc/pages/ResidentDetailsPage';
+import { CareNotesPage }       from '../features/ltc/pages/CareNotesPage';
+import { NewCareNotePage }     from '../features/ltc/pages/NewCareNotePage';
+import { CareNoteDetailsPage } from '../features/ltc/pages/CareNoteDetailsPage';
+
 
 export const router = createBrowserRouter([
   {
@@ -115,23 +127,40 @@ export const router = createBrowserRouter([
         ]
       },
       // Billing
-      {
-        path: 'billing',
-        children: [
-          {
-            index: true,
-            element: <BillingPage />
-          },
-          {
-            path: 'new',
-            element: <div className="text-center py-12 text-slate-500">New Claim Form - Coming Soon</div>
-          },
-          {
-            path: ':id',
-            element: <div className="text-center py-12 text-slate-500">Claim Details - Coming Soon</div>
-          }
-        ]
-      },
+{
+  path: 'billing',
+  children: [
+    {
+      index: true,
+      element: <BillingPage />
+    },
+    {
+      path: 'new',
+      element: <NewClaimPage />         // ✅ was placeholder
+    },
+    {
+      path: ':id',
+      element: <ClaimDetailsPage />     // ✅ was placeholder
+    }
+  ]
+},
+{
+  path: 'lab',
+  children: [
+    {
+      index: true,
+      element: <LabResultsPage />
+    },
+    {
+      path: ':id',
+      element: <LabResultDetailsPage />
+    },
+    {
+      path: ':id/enter-results',
+      element: <EnterResultsPage />
+    }
+  ]
+},
       // Pharmacy - ✅ FIXED: Removed duplicate MainLayout wrapper
       {
         path: 'pharmacy',
@@ -163,19 +192,28 @@ export const router = createBrowserRouter([
         ]
       },
       // LTC (placeholder)
-      {
-        path: 'ltc',
-        children: [
-          {
-            path: 'residents',
-            element: <div className="text-center py-12 text-slate-500">LTC Residents - Coming Soon</div>
-          },
-          {
-            path: 'care-notes',
-            element: <div className="text-center py-12 text-slate-500">Care Notes - Coming Soon</div>
-          }
-        ]
-      }
+{
+  path: 'ltc',
+  children: [
+    {
+      path: 'residents',
+      children: [
+        { index: true,       element: <ResidentsPage /> },
+        { path: 'new',       element: <AddEditResidentPage /> },
+        { path: ':id',       element: <ResidentDetailsPage /> },
+        { path: ':id/edit',  element: <AddEditResidentPage /> }
+      ]
+    },
+    {
+      path: 'care-notes',
+      children: [
+        { index: true,  element: <CareNotesPage /> },
+        { path: 'new',  element: <NewCareNotePage /> },
+        { path: ':id',  element: <CareNoteDetailsPage /> }
+      ]
+    }
+  ]
+},
     ]
   }
 ]);

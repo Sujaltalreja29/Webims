@@ -1,6 +1,8 @@
 import { User, Patient, Appointment, Encounter, Prescription, Claim, LabResult,RefillRequest } from '../models';
 import { storageService } from './storage.service';
 import type { MedicationInventory, StockTransaction } from '../models';
+import type { Resident, CareNote } from '../models';
+
 
 export const seedData = () => {
   // Check if data already exists
@@ -370,11 +372,11 @@ export const seedData = () => {
 // Seed lab results
 const labResults: LabResult[] = [
   {
-    id: 'lab-001',
+    id: 'lab-1',
     labOrderNumber: 'LAB20240101001',
-    patientId: 'pat-001', // John Smith
-    encounterId: 'enc-001',
-    orderedBy: 'user-doctor',
+    patientId: 'patient-1',
+    encounterId: 'enc-1',
+    orderedBy: 'user-1',
     orderedByName: 'Dr. Sarah Johnson',
     testName: 'Hemoglobin A1C',
     testType: 'Blood Test',
@@ -382,35 +384,39 @@ const labResults: LabResult[] = [
     result: '6.8%',
     normalRange: '< 5.7%',
     isAbnormal: true,
-    notes: 'Elevated - monitor diabetes management',
+    notes: 'Elevated — monitor diabetes management',
     orderedDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     completedDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    enteredBy: 'user-2',
+    enteredByName: 'Emily Davis',
     createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    createdBy: 'user-doctor'
+    createdBy: 'user-1'
   },
   {
-    id: 'lab-002',
+    id: 'lab-2',
     labOrderNumber: 'LAB20240101002',
-    patientId: 'pat-001', // John Smith
-    encounterId: 'enc-001',
-    orderedBy: 'user-doctor',
+    patientId: 'patient-1',
+    encounterId: 'enc-1',
+    orderedBy: 'user-1',
     orderedByName: 'Dr. Sarah Johnson',
     testName: 'Complete Blood Count (CBC)',
     testType: 'Blood Test',
     status: 'Completed',
     result: 'Within normal limits',
-    normalRange: 'WBC: 4.5-11, RBC: 4.5-5.5',
+    normalRange: 'WBC: 4.5–11, RBC: 4.5–5.5',
     isAbnormal: false,
     orderedDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     completedDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    enteredBy: 'user-2',
+    enteredByName: 'Emily Davis',
     createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    createdBy: 'user-doctor'
+    createdBy: 'user-1'
   },
   {
-    id: 'lab-003',
+    id: 'lab-3',
     labOrderNumber: 'LAB20240105001',
-    patientId: 'pat-001', // John Smith
-    orderedBy: 'user-doctor',
+    patientId: 'patient-1',
+    orderedBy: 'user-1',
     orderedByName: 'Dr. Sarah Johnson',
     testName: 'Lipid Panel',
     testType: 'Blood Test',
@@ -418,25 +424,53 @@ const labResults: LabResult[] = [
     notes: 'Fasting required',
     orderedDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    createdBy: 'user-doctor'
+    createdBy: 'user-1'
   },
   {
-    id: 'lab-004',
+    id: 'lab-4',
     labOrderNumber: 'LAB20240102001',
-    patientId: 'pat-002', // Jane Doe
-    encounterId: 'enc-002',
-    orderedBy: 'user-doctor',
+    patientId: 'patient-2',
+    orderedBy: 'user-1',
     orderedByName: 'Dr. Sarah Johnson',
-    testName: 'Thyroid Function Test (TSH, T3, T4)',
+    testName: 'Thyroid Function Test (TSH)',
     testType: 'Blood Test',
     status: 'Completed',
-    result: 'TSH: 2.5 mIU/L (Normal)',
-    normalRange: 'TSH: 0.4-4.0 mIU/L',
+    result: 'TSH: 2.5 mIU/L',
+    normalRange: 'TSH: 0.4–4.0 mIU/L',
     isAbnormal: false,
     orderedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     completedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    enteredBy: 'user-2',
+    enteredByName: 'Emily Davis',
     createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    createdBy: 'user-doctor'
+    createdBy: 'user-1'
+  },
+  {
+    id: 'lab-5',
+    labOrderNumber: 'LAB20240106001',
+    patientId: 'patient-2',
+    orderedBy: 'user-1',
+    orderedByName: 'Dr. Sarah Johnson',
+    testName: 'Urinalysis',
+    testType: 'Urinalysis',
+    status: 'Ordered',
+    orderedDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'user-1'
+  },
+  {
+    id: 'lab-6',
+    labOrderNumber: 'LAB20240107001',
+    patientId: 'patient-3',
+    orderedBy: 'user-1',
+    orderedByName: 'Dr. Sarah Johnson',
+    testName: 'Chest X-Ray',
+    testType: 'X-Ray',
+    status: 'Ordered',
+    notes: 'Rule out pneumonia',
+    orderedDate: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    createdBy: 'user-1'
   }
 ];
 
@@ -674,6 +708,274 @@ const seedStockTransactions: StockTransaction[] = [
     createdAt: '2024-01-25T11:00:00Z'
   }
 ];
+
+// Only seed if not already present
+if (!storageService.get('residents')) {
+
+  const seedResidents: Resident[] = [
+    {
+      id: 'resident-1',
+      residentNumber: 'RES00000001',
+      firstName: 'Dorothy',
+      lastName: 'Henderson',
+      dateOfBirth: '1938-04-12',
+      gender: 'Female',
+      phone: '555-4001',
+      emergencyContact: {
+        name: 'Robert Henderson',
+        relationship: 'Son',
+        phone: '555-4002'
+      },
+      admissionDate: '2023-03-15',
+      roomNumber: '101',
+      bedNumber: 'A',
+      careLevel: 'Assisted',
+      status: 'Active',
+      medicalConditions: ['Hypertension', 'Type 2 Diabetes', 'Osteoarthritis'],
+      allergies: 'Penicillin',
+      primaryPhysician: 'Dr. Sarah Johnson',
+      mobilityStatus: 'Walker',
+      cognitiveStatus: 'Alert',
+      dietaryRestrictions: 'Low sodium, diabetic diet',
+      dnrStatus: true,
+      insuranceType: 'Medicare',
+      insuranceId: 'MED-001-HENDERSON',
+      notes: 'Prefers morning showers. Enjoys bingo on Tuesdays.',
+      createdAt: '2023-03-15T09:00:00Z',
+      createdBy: 'user-2'
+    },
+    {
+      id: 'resident-2',
+      residentNumber: 'RES00000002',
+      firstName: 'Harold',
+      lastName: 'Mitchell',
+      dateOfBirth: '1932-11-28',
+      gender: 'Male',
+      phone: '555-4003',
+      emergencyContact: {
+        name: 'Susan Mitchell',
+        relationship: 'Daughter',
+        phone: '555-4004'
+      },
+      admissionDate: '2022-08-20',
+      roomNumber: '102',
+      bedNumber: 'A',
+      careLevel: 'Skilled Nursing',
+      status: 'Active',
+      medicalConditions: ['COPD', 'Heart Failure', 'Depression'],
+      allergies: 'Sulfa drugs',
+      primaryPhysician: 'Dr. Sarah Johnson',
+      mobilityStatus: 'Wheelchair',
+      cognitiveStatus: 'Mild Impairment',
+      dietaryRestrictions: 'Soft foods, fluid restriction 1.5L/day',
+      dnrStatus: true,
+      insuranceType: 'Medicare',
+      insuranceId: 'MED-002-MITCHELL',
+      createdAt: '2022-08-20T10:00:00Z',
+      createdBy: 'user-2'
+    },
+    {
+      id: 'resident-3',
+      residentNumber: 'RES00000003',
+      firstName: 'Eleanor',
+      lastName: 'Vance',
+      dateOfBirth: '1940-07-03',
+      gender: 'Female',
+      emergencyContact: {
+        name: 'Thomas Vance',
+        relationship: 'Husband',
+        phone: '555-4006'
+      },
+      admissionDate: '2023-09-01',
+      roomNumber: '103',
+      bedNumber: 'A',
+      careLevel: 'Memory Care',
+      status: 'Active',
+      medicalConditions: ["Alzheimer's Disease", 'Hypertension'],
+      primaryPhysician: 'Dr. Sarah Johnson',
+      mobilityStatus: 'Walker',
+      cognitiveStatus: 'Moderate Impairment',
+      dietaryRestrictions: 'Finger foods preferred',
+      dnrStatus: false,
+      insuranceType: 'Private',
+      insuranceId: 'PVT-003-VANCE',
+      notes: 'Responds well to music therapy. May become confused in evenings (sundowning).',
+      createdAt: '2023-09-01T08:00:00Z',
+      createdBy: 'user-2'
+    },
+    {
+      id: 'resident-4',
+      residentNumber: 'RES00000004',
+      firstName: 'George',
+      lastName: 'Paulson',
+      dateOfBirth: '1945-02-18',
+      gender: 'Male',
+      phone: '555-4007',
+      emergencyContact: {
+        name: 'Linda Paulson',
+        relationship: 'Wife',
+        phone: '555-4008'
+      },
+      admissionDate: '2024-01-10',
+      roomNumber: '104',
+      bedNumber: 'A',
+      careLevel: 'Independent',
+      status: 'Active',
+      medicalConditions: ['Mild Hypertension'],
+      primaryPhysician: 'Dr. Sarah Johnson',
+      mobilityStatus: 'Independent',
+      cognitiveStatus: 'Alert',
+      dnrStatus: false,
+      insuranceType: 'Private',
+      insuranceId: 'PVT-004-PAULSON',
+      notes: 'Very independent. Participates in all activities.',
+      createdAt: '2024-01-10T09:00:00Z',
+      createdBy: 'user-2'
+    },
+    {
+      id: 'resident-5',
+      residentNumber: 'RES00000005',
+      firstName: 'Margaret',
+      lastName: 'Chen',
+      dateOfBirth: '1936-09-14',
+      gender: 'Female',
+      emergencyContact: {
+        name: 'Kevin Chen',
+        relationship: 'Son',
+        phone: '555-4010'
+      },
+      admissionDate: '2022-05-12',
+      roomNumber: '201',
+      bedNumber: 'A',
+      careLevel: 'Skilled Nursing',
+      status: 'Hospital Transfer',
+      medicalConditions: ['Stroke', 'Dysphagia', 'Hypertension'],
+      allergies: 'Latex',
+      primaryPhysician: 'Dr. Sarah Johnson',
+      mobilityStatus: 'Bedridden',
+      cognitiveStatus: 'Moderate Impairment',
+      dietaryRestrictions: 'Pureed foods, thickened liquids',
+      dnrStatus: true,
+      insuranceType: 'Medicare',
+      insuranceId: 'MED-005-CHEN',
+      createdAt: '2022-05-12T07:00:00Z',
+      createdBy: 'user-2'
+    }
+  ];
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const seedCareNotes: CareNote[] = [
+    {
+      id: 'cn-1',
+      careNoteNumber: 'CN00000001',
+      residentId: 'resident-1',
+      shift: 'Day',
+      date: today,
+      startTime: '07:00',
+      endTime: '15:00',
+      caregiverId: 'user-2',
+      caregiverName: 'Emily Davis',
+      activities: [
+        { type: 'Bath/Hygiene', description: 'Assisted with morning shower', time: '07:30', completed: true },
+        { type: 'Meal', description: 'Breakfast — full meal consumed', time: '08:00', completed: true },
+        { type: 'Medication', description: 'Morning medications administered', time: '08:30', completed: true },
+        { type: 'Exercise', description: '15-min walk in hallway with walker', time: '10:00', completed: true },
+        { type: 'Meal', description: 'Lunch — partial meal consumed', time: '12:00', completed: true }
+      ],
+      vitals: {
+        bloodPressure: '138/86',
+        pulse: '74',
+        temperature: '98.4',
+        weight: '142',
+        oxygenSaturation: '97%'
+      },
+      medications: [
+        {
+          medicationName: 'Lisinopril 10mg',
+          dosage: '10mg',
+          scheduledTime: '08:00',
+          administered: true,
+          administeredTime: '08:15'
+        },
+        {
+          medicationName: 'Metformin 500mg',
+          dosage: '500mg',
+          scheduledTime: '08:00',
+          administered: true,
+          administeredTime: '08:15'
+        }
+      ],
+      nutritionIntake: 'Partial',
+      hydrationIntake: 'Adequate',
+      painLevel: 2,
+      mood: 'Happy',
+      behavioralNotes: 'Resident was cheerful and engaged. Expressed excitement about upcoming family visit.',
+      skinCondition: 'Intact, no breakdown noted.',
+      followUpNeeded: false,
+      signedBy: 'Emily Davis',
+      signedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      createdBy: 'user-2'
+    },
+    {
+      id: 'cn-2',
+      careNoteNumber: 'CN00000002',
+      residentId: 'resident-2',
+      shift: 'Day',
+      date: today,
+      startTime: '07:00',
+      endTime: '15:00',
+      caregiverId: 'user-2',
+      caregiverName: 'Emily Davis',
+      activities: [
+        { type: 'Meal', description: 'Breakfast — soft diet, 75% consumed', time: '08:00', completed: true },
+        { type: 'Medication', description: 'Morning medications administered', time: '08:30', completed: true },
+        { type: 'Vital Signs', description: 'Routine vitals taken', time: '09:00', completed: true },
+        { type: 'Physical Therapy', description: 'PT session — range of motion exercises', time: '10:30', completed: true }
+      ],
+      vitals: {
+        bloodPressure: '152/94',
+        pulse: '82',
+        temperature: '98.8',
+        oxygenSaturation: '92%',
+        respiratoryRate: '18'
+      },
+      medications: [
+        {
+          medicationName: 'Furosemide 40mg',
+          dosage: '40mg',
+          scheduledTime: '08:00',
+          administered: true,
+          administeredTime: '08:20'
+        },
+        {
+          medicationName: 'Carvedilol 6.25mg',
+          dosage: '6.25mg',
+          scheduledTime: '08:00',
+          administered: true,
+          administeredTime: '08:20'
+        }
+      ],
+      nutritionIntake: 'Partial',
+      hydrationIntake: 'Limited',
+      painLevel: 4,
+      mood: 'Calm',
+      behavioralNotes: 'Resident seemed fatigued. Mild shortness of breath noted at rest.',
+      skinCondition: 'Mild edema bilateral lower extremities.',
+      alerts: 'O2 sat 92% — monitor closely. Notified charge nurse.',
+      followUpNeeded: true,
+      followUpReason: 'O2 saturation below baseline. Consider physician notification if no improvement.',
+      signedBy: 'Emily Davis',
+      signedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      createdBy: 'user-2'
+    }
+  ];
+
+  storageService.set('residents', seedResidents);
+  storageService.set('care_notes', seedCareNotes);
+}
 
   // Save to localStorage
   storageService.set('users', users);

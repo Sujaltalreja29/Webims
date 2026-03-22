@@ -7,4 +7,6 @@ export * from './claim.model';
 export * from './lab-result.model';
 // Add these exports
 export * from './medication-inventory.model';
+export * from './resident.model';
+export * from './care-note.model';
 export type { MedicationInventory, StockTransaction, RefillRequest } from './medication-inventory.model';

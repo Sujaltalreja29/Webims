@@ -8,19 +8,23 @@ export interface LabResult {
   encounterId?: string;
   orderedBy: string;
   orderedByName?: string;
-  
+
   testName: string;
   testType: LabTestType;
   status: LabStatus;
-  
+
   result?: string;
   normalRange?: string;
   isAbnormal?: boolean;
   notes?: string;
-  
+
   orderedDate: string;
   completedDate?: string;
-  
+
+  // Added for result entry workflow
+  enteredBy?: string;
+  enteredByName?: string;
+
   createdAt: string;
   createdBy: string;
 }
