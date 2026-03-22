@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { ROLE_LABELS } from '../core/constants/roles';
+import { ACCESS_CONTROL } from '../core/constants/access-control';
 import {
   LayoutDashboard,
   Users,
@@ -39,17 +41,17 @@ export const Sidebar: React.FC = () => {
       icon: Stethoscope,
       items: [
         { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['all'] },
-        { path: '/patients', icon: Users, label: 'Patients', roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'] },
-        { path: '/appointments', icon: Calendar, label: 'Appointments', roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'] },
-        { path: '/clinical', icon: ClipboardList, label: 'Clinical Notes', roles: ['DOCTOR', 'NURSE', 'ADMIN'] },
+        { path: '/patients', icon: Users, label: 'Patients', roles: ACCESS_CONTROL.routes.patients },
+        { path: '/appointments', icon: Calendar, label: 'Appointments', roles: ACCESS_CONTROL.routes.appointments },
+        { path: '/clinical', icon: ClipboardList, label: 'Clinical Notes', roles: ACCESS_CONTROL.routes.clinical },
         {
-  path: '/lab',
-  icon: FlaskConical, 
-  label: 'Lab Results',
-  roles: ['DOCTOR', 'NURSE', 'ADMIN']
-},
-            { path: '/clinical/refill-requests', icon: RefreshCcw, label: 'Refill Requests', roles: ['DOCTOR', 'ADMIN'] },
-        { path: '/billing', icon: DollarSign, label: 'Billing', roles: ['BILLING', 'ADMIN'] }
+          path: '/lab',
+          icon: FlaskConical,
+          label: 'Lab Results',
+          roles: ACCESS_CONTROL.routes.lab
+        },
+        { path: '/clinical/refill-requests', icon: RefreshCcw, label: 'Refill Requests', roles: ACCESS_CONTROL.routes.refillRequests },
+        { path: '/billing', icon: DollarSign, label: 'Billing', roles: ACCESS_CONTROL.routes.billing }
       ]
     },
     {
@@ -57,29 +59,29 @@ export const Sidebar: React.FC = () => {
       label: 'Pharmacy',
       icon: Pill,
       items: [
-        { path: '/pharmacy/prescriptions', icon: FileText, label: 'Prescriptions', roles: ['PHARMACIST', 'DOCTOR', 'ADMIN'] },
-        { path: '/pharmacy/inventory', icon: Package, label: 'Inventory', roles: ['PHARMACIST', 'ADMIN'] }
+        { path: '/pharmacy/prescriptions', icon: FileText, label: 'Prescriptions', roles: ACCESS_CONTROL.routes.pharmacyQueue },
+        { path: '/pharmacy/inventory', icon: Package, label: 'Inventory', roles: ACCESS_CONTROL.routes.pharmacyInventory }
       ]
     },
-{
-  id: 'ltc',
-  label: 'CareCatalyst (LTC)',
-  icon: Building2,
-  items: [
     {
-      path: '/ltc/residents',
-      icon: Users,
-      label: 'Residents',
-      roles: ['NURSE', 'DOCTOR', 'ADMIN']
-    },
-    {
-      path: '/ltc/care-notes',
-      icon: FileText,
-      label: 'Care Notes',
-      roles: ['NURSE', 'DOCTOR', 'ADMIN']
+      id: 'ltc',
+      label: 'CareCatalyst (LTC)',
+      icon: Building2,
+      items: [
+        {
+          path: '/ltc/residents',
+          icon: Users,
+          label: 'Residents',
+          roles: ACCESS_CONTROL.routes.ltc
+        },
+        {
+          path: '/ltc/care-notes',
+          icon: FileText,
+          label: 'Care Notes',
+          roles: ACCESS_CONTROL.routes.ltc
+        }
+      ]
     }
-  ]
-},
   ];
 
   const canAccessRoute = (roles: string[]) => {
@@ -99,19 +101,36 @@ export const Sidebar: React.FC = () => {
     return items.some(item => location.pathname.startsWith(item.path));
   };
 
+  const isItemActive = (path: string) => {
+    if (path === '/dashboard') {
+      return location.pathname === '/dashboard';
+    }
+
+    if (path === '/clinical') {
+      return (
+        location.pathname === '/clinical' ||
+        (location.pathname.startsWith('/clinical/') && !location.pathname.startsWith('/clinical/refill-requests'))
+      );
+    }
+
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
+
   return (
-    <div className="w-64 bg-gradient-to-b from-slate-900 to-slate-800 h-screen fixed left-0 top-0 shadow-2xl">
+    <aside className="fixed left-0 top-0 z-40 flex h-screen w-72 flex-col border-r border-slate-200 bg-white shadow-xl shadow-slate-900/5">
       {/* Logo */}
-      <div className="h-16 flex items-center px-6 border-b border-slate-700">
-        <Activity className="text-blue-400 mr-3" size={28} strokeWidth={2.5} />
+      <div className="flex h-16 items-center border-b border-slate-200 px-5">
+        <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-md shadow-blue-400/30">
+          <Activity className="text-white" size={20} strokeWidth={2.5} />
+        </div>
         <div>
-          <span className="text-xl font-bold text-white">WebIMS</span>
-          <p className="text-xs text-slate-400">Healthcare Platform</p>
+          <span className="text-lg font-bold tracking-tight text-slate-900">WebIMS</span>
+          <p className="text-xs font-medium text-slate-500">Clinical Operations Suite</p>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="p-4 space-y-2 overflow-y-auto h-[calc(100vh-4rem)]">
+      <nav className="flex-1 space-y-2 overflow-y-auto p-3">
         {navModules.map((module) => {
           const hasAccess = module.items.some(item => canAccessRoute(item.roles));
           if (!hasAccess) return null;
@@ -124,10 +143,10 @@ export const Sidebar: React.FC = () => {
               {/* Module Header */}
               <button
                 onClick={() => toggleModule(module.id)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all ${
+                className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 transition-all ${
                   isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-700'
+                    ? 'border-blue-200 bg-blue-50 text-blue-700'
+                    : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50'
                 }`}
               >
                 <div className="flex items-center">
@@ -142,7 +161,7 @@ export const Sidebar: React.FC = () => {
 
               {/* Module Items */}
               {isExpanded && (
-                <div className="mt-1 ml-4 space-y-1">
+                <div className="ml-4 mt-1 space-y-1 border-l border-slate-200 pl-2">
                   {module.items.map((item) => {
                     if (!canAccessRoute(item.roles)) return null;
 
@@ -150,11 +169,11 @@ export const Sidebar: React.FC = () => {
                       <NavLink
                         key={item.path}
                         to={item.path}
-                        className={({ isActive }) =>
-                          `flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
-                            isActive
-                              ? 'bg-slate-700 text-white font-medium'
-                              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                        className={() =>
+                          `flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-all ${
+                            isItemActive(item.path)
+                              ? 'bg-slate-100 font-semibold text-slate-900'
+                              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                           }`
                         }
                       >
@@ -163,7 +182,7 @@ export const Sidebar: React.FC = () => {
                           {item.label}
                         </div>
                         {item.badge && (
-                          <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">
+                          <span className="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
                             {item.badge}
                           </span>
                         )}
@@ -176,6 +195,14 @@ export const Sidebar: React.FC = () => {
           );
         })}
       </nav>
-    </div>
+
+      <div className="border-t border-slate-200 p-3">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Signed In</p>
+          <p className="mt-1 truncate text-sm font-semibold text-slate-900">{user?.fullName || 'Unknown User'}</p>
+          <p className="text-xs text-slate-600">{user ? ROLE_LABELS[user.role] : 'No active role'}</p>
+        </div>
+      </div>
+    </aside>
   );
 };

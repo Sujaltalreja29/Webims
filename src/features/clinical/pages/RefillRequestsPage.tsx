@@ -7,6 +7,10 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { ApproveRefillModal } from '../components/ApproveRefillModal';
 import { DenyRefillModal } from '../components/DenyRefillModal';
+import { PageShell } from '../../../shared/components/PageShell';
+import { Button } from '../../../shared/components/ui/Button';
+import { LoadingState } from '../../../shared/components/states/LoadingState';
+import { EmptyState } from '../../../shared/components/states/EmptyState';
 
 export const RefillRequestsPage = () => {
   const [requests, setRequests] = useState<RefillRequest[]>([]);
@@ -139,25 +143,32 @@ export const RefillRequestsPage = () => {
     }
   };
 
+  const resolvePrescription = (request: RefillRequest) => {
+    const exact = prescriptions[request.originalPrescriptionId];
+    if (exact) return exact;
+
+    const normalized = request.originalPrescriptionId.replace(/^rx-(\d+)$/, (_, number) => `rx-${number.padStart(3, '0')}`);
+    return prescriptions[normalized];
+  };
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-slate-600">Loading refill requests...</div>
-      </div>
-    );
+    return <LoadingState message="Loading refill requests..." />;
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Refill Requests</h1>
-        <p className="text-slate-600 mt-1">Review and approve prescription refill requests from patients</p>
-      </div>
+    <PageShell
+      title="Refill Requests"
+      subtitle="Review and approve prescription refill requests from patients"
+      actions={(
+        <Button variant="secondary" size="sm" onClick={loadData}>
+          Refresh
+        </Button>
+      )}
+    >
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+        <div className="bg-linear-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-blue-100">Total Requests</p>
@@ -167,7 +178,7 @@ export const RefillRequestsPage = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+        <div className="bg-linear-to-br from-amber-500 to-amber-600 rounded-lg p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-amber-100">Pending Review</p>
@@ -177,7 +188,7 @@ export const RefillRequestsPage = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+        <div className="bg-linear-to-br from-green-500 to-green-600 rounded-lg p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-green-100">Approved</p>
@@ -187,7 +198,7 @@ export const RefillRequestsPage = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+        <div className="bg-linear-to-br from-red-500 to-red-600 rounded-lg p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-red-100">Denied</p>
@@ -247,19 +258,18 @@ export const RefillRequestsPage = () => {
       {/* Requests List */}
       <div className="space-y-4">
         {filteredRequests.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-12 text-center">
-            <RefreshCcw size={48} className="mx-auto text-slate-300 mb-4" />
-            <p className="text-slate-500">No refill requests found</p>
-            <p className="text-sm text-slate-400 mt-2">
-              {filterStatus === 'pending' 
-                ? 'All refill requests have been reviewed'
-                : 'No requests match the selected filter'
-              }
-            </p>
-          </div>
+          <EmptyState
+            title="No refill requests found"
+            description={
+              filterStatus === 'pending'
+                ? 'All refill requests have already been reviewed.'
+                : 'No refill requests match the selected filter.'
+            }
+            icon={<RefreshCcw size={26} />}
+          />
         ) : (
           filteredRequests.map((request) => {
-            const prescription = prescriptions[request.originalPrescriptionId];
+            const prescription = resolvePrescription(request);
             const patient = patients[request.patientId];
 
             if (!prescription || !patient) return null;
@@ -421,6 +431,6 @@ export const RefillRequestsPage = () => {
           onSuccess={handleModalSuccess}
         />
       )}
-    </div>
+    </PageShell>
   );
 };

@@ -7,7 +7,20 @@ import type { Resident, CareNote } from '../models';
 export const seedData = () => {
   // Check if data already exists
   if (storageService.get('users')) {
-    console.log('Data already seeded');
+    // Backfill newer datasets for existing localStorage installs.
+    if (!storageService.get('refill_requests')) {
+      storageService.set('refill_requests', seedRefillRequests);
+    }
+
+    if (!storageService.get('medication_inventory')) {
+      storageService.set('medication_inventory', seedMedicationInventory);
+    }
+
+    if (!storageService.get('stock_transactions')) {
+      storageService.set('stock_transactions', seedStockTransactions);
+    }
+
+    console.log('Data already seeded (migration check complete)');
     return;
   }
 
@@ -479,7 +492,7 @@ const labResults: LabResult[] = [
   {
     id: 'refill-req-1',
     refillRequestNumber: 'RFR1705920000001',
-    originalPrescriptionId: 'rx-1',
+    originalPrescriptionId: 'rx-001',
     patientId: 'patient-1',
     medicationName: 'Aspirin 81mg',
     requestedDate: '2024-01-22T09:00:00Z',
@@ -489,7 +502,7 @@ const labResults: LabResult[] = [
   {
     id: 'refill-req-2',
     refillRequestNumber: 'RFR1705920000002',
-    originalPrescriptionId: 'rx-2',
+    originalPrescriptionId: 'rx-002',
     patientId: 'patient-2',
     medicationName: 'Lisinopril 10mg',
     requestedDate: '2024-01-21T14:30:00Z',
@@ -503,7 +516,7 @@ const labResults: LabResult[] = [
   {
     id: 'refill-req-3',
     refillRequestNumber: 'RFR1705920000003',
-    originalPrescriptionId: 'rx-5',
+    originalPrescriptionId: 'rx-005',
     patientId: 'patient-1',
     medicationName: 'Omeprazole 20mg',
     requestedDate: '2024-01-20T10:00:00Z',

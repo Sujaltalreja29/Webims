@@ -1,8 +1,12 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { LandingPage } from '../features/auth/pages/LandingPage';
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { SignUpPage } from '../features/auth/pages/SignUpPage';
 import { MainLayout } from '../layout/MainLayout';
 import { ProtectedRoute } from './ProtectedRoute';
+import { RoleProtectedRoute } from './RoleProtectedRoute';
+import type { UserRole } from '../core/models';
+import { ACCESS_CONTROL } from '../core/constants/access-control';
 import { ClinicDashboard } from '../features/dashboard/pages/ClinicDashboard';
 import { PatientsListPage } from '../features/patients/pages/PatientsListPage';
 import { CreatePatientPage } from '../features/patients/pages/CreatePatientPage';
@@ -34,8 +38,16 @@ import { CareNotesPage }       from '../features/ltc/pages/CareNotesPage';
 import { NewCareNotePage }     from '../features/ltc/pages/NewCareNotePage';
 import { CareNoteDetailsPage } from '../features/ltc/pages/CareNoteDetailsPage';
 
+const withRoles = (roles: UserRole[], element: JSX.Element) => (
+  <RoleProtectedRoute roles={roles}>{element}</RoleProtectedRoute>
+);
+
 
 export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <LandingPage />
+  },
   {
     path: '/login',
     element: <LoginPage />
@@ -53,10 +65,6 @@ export const router = createBrowserRouter([
     ),
     children: [
       {
-        index: true,
-        element: <Navigate to="/dashboard" replace />
-      },
-      {
         path: 'dashboard',
         element: <ClinicDashboard />
       },
@@ -66,19 +74,19 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <PatientsListPage />
+            element: withRoles(ACCESS_CONTROL.routes.patients, <PatientsListPage />)
           },
           {
             path: 'new',
-            element: <CreatePatientPage />
+            element: withRoles(ACCESS_CONTROL.routes.patients, <CreatePatientPage />)
           },
           {
             path: ':id',
-            element: <PatientDetailsPage />
+            element: withRoles(ACCESS_CONTROL.routes.patients, <PatientDetailsPage />)
           },
           {
             path: ':id/edit',
-            element: <EditPatientPage />
+            element: withRoles(ACCESS_CONTROL.routes.patients, <EditPatientPage />)
           }
         ]
       },
@@ -88,19 +96,19 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <AppointmentsPage />
+            element: withRoles(ACCESS_CONTROL.routes.appointments, <AppointmentsPage />)
           },
           {
             path: 'new',
-            element: <NewAppointmentPage />
+            element: withRoles(ACCESS_CONTROL.routes.appointments, <NewAppointmentPage />)
           },
           {
             path: ':id',
-            element: <AppointmentDetailsPage />
+            element: withRoles(ACCESS_CONTROL.routes.appointments, <AppointmentDetailsPage />)
           },
           {
             path: ':id/reschedule',
-            element: <RescheduleAppointmentPage />
+            element: withRoles(ACCESS_CONTROL.routes.appointments, <RescheduleAppointmentPage />)
           }
         ]
       },
@@ -110,19 +118,19 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <ClinicalNotesPage />
+            element: withRoles(ACCESS_CONTROL.routes.clinical, <ClinicalNotesPage />)
           },
           {
             path: 'new',
-            element: <NewEncounterPage />
+            element: withRoles(ACCESS_CONTROL.routes.clinical, <NewEncounterPage />)
           },
           {
             path: ':id',
-            element: <EncounterDetailsPage />
+            element: withRoles(ACCESS_CONTROL.routes.clinical, <EncounterDetailsPage />)
           },
               {
       path: 'refill-requests',  // ✅ Add this
-      element: <RefillRequestsPage />
+      element: withRoles(ACCESS_CONTROL.routes.refillRequests, <RefillRequestsPage />)
     }
         ]
       },
@@ -132,15 +140,15 @@ export const router = createBrowserRouter([
   children: [
     {
       index: true,
-      element: <BillingPage />
+      element: withRoles(ACCESS_CONTROL.routes.billing, <BillingPage />)
     },
     {
       path: 'new',
-      element: <NewClaimPage />         // ✅ was placeholder
+      element: withRoles(ACCESS_CONTROL.routes.billing, <NewClaimPage />)         // ✅ was placeholder
     },
     {
       path: ':id',
-      element: <ClaimDetailsPage />     // ✅ was placeholder
+      element: withRoles(ACCESS_CONTROL.routes.billing, <ClaimDetailsPage />)     // ✅ was placeholder
     }
   ]
 },
@@ -149,15 +157,15 @@ export const router = createBrowserRouter([
   children: [
     {
       index: true,
-      element: <LabResultsPage />
+      element: withRoles(ACCESS_CONTROL.routes.lab, <LabResultsPage />)
     },
     {
       path: ':id',
-      element: <LabResultDetailsPage />
+      element: withRoles(ACCESS_CONTROL.routes.lab, <LabResultDetailsPage />)
     },
     {
       path: ':id/enter-results',
-      element: <EnterResultsPage />
+      element: withRoles(ACCESS_CONTROL.routes.lab, <EnterResultsPage />)
     }
   ]
 },
@@ -167,27 +175,27 @@ export const router = createBrowserRouter([
         children: [
           {
             path: 'prescriptions',
-            element: <PrescriptionsPage />
+            element: withRoles(ACCESS_CONTROL.routes.pharmacyQueue, <PrescriptionsPage />)
           },
           {
             path: 'prescriptions/:id',
-            element: <PrescriptionDetailsPage />
+            element: withRoles(ACCESS_CONTROL.routes.pharmacyQueue, <PrescriptionDetailsPage />)
           },
           {
             path: 'inventory',
-            element: <InventoryPage />
+            element: withRoles(ACCESS_CONTROL.routes.pharmacyInventory, <InventoryPage />)
           },
           {
             path: 'inventory/new',
-            element: <AddEditMedicationPage />
+            element: withRoles(ACCESS_CONTROL.routes.pharmacyInventory, <AddEditMedicationPage />)
           },
           {
             path: 'inventory/:id',
-            element: <MedicationDetailsPage />
+            element: withRoles(ACCESS_CONTROL.routes.pharmacyInventory, <MedicationDetailsPage />)
           },
           {
             path: 'inventory/:id/edit',
-            element: <AddEditMedicationPage />
+            element: withRoles(ACCESS_CONTROL.routes.pharmacyInventory, <AddEditMedicationPage />)
           }
         ]
       },
@@ -198,18 +206,18 @@ export const router = createBrowserRouter([
     {
       path: 'residents',
       children: [
-        { index: true,       element: <ResidentsPage /> },
-        { path: 'new',       element: <AddEditResidentPage /> },
-        { path: ':id',       element: <ResidentDetailsPage /> },
-        { path: ':id/edit',  element: <AddEditResidentPage /> }
+        { index: true,       element: withRoles(ACCESS_CONTROL.routes.ltc, <ResidentsPage />) },
+        { path: 'new',       element: withRoles(ACCESS_CONTROL.routes.ltc, <AddEditResidentPage />) },
+        { path: ':id',       element: withRoles(ACCESS_CONTROL.routes.ltc, <ResidentDetailsPage />) },
+        { path: ':id/edit',  element: withRoles(ACCESS_CONTROL.routes.ltc, <AddEditResidentPage />) }
       ]
     },
     {
       path: 'care-notes',
       children: [
-        { index: true,  element: <CareNotesPage /> },
-        { path: 'new',  element: <NewCareNotePage /> },
-        { path: ':id',  element: <CareNoteDetailsPage /> }
+        { index: true,  element: withRoles(ACCESS_CONTROL.routes.ltc, <CareNotesPage />) },
+        { path: 'new',  element: withRoles(ACCESS_CONTROL.routes.ltc, <NewCareNotePage />) },
+        { path: ':id',  element: withRoles(ACCESS_CONTROL.routes.ltc, <CareNoteDetailsPage />) }
       ]
     }
   ]

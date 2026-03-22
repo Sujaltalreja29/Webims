@@ -17,15 +17,24 @@ export const Modal: React.FC<ModalProps> = ({
   size = 'md'
 }) => {
   useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.addEventListener('keydown', handleEscape);
     } else {
       document.body.style.overflow = 'unset';
     }
+
     return () => {
       document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -41,25 +50,26 @@ export const Modal: React.FC<ModalProps> = ({
       <div className="flex min-h-screen items-center justify-center p-4">
         {/* Backdrop */}
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
           onClick={onClose}
         />
 
         {/* Modal */}
-        <div className={`relative bg-white rounded-lg shadow-xl ${sizes[size]} w-full`}>
+        <div className={`relative w-full ${sizes[size]} overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl`}>
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+          <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
+            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="rounded-md p-1 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700"
+              aria-label="Close modal"
             >
-              <X size={24} />
+              <X size={20} />
             </button>
           </div>
 
           {/* Content */}
-          <div className="p-6">{children}</div>
+          <div className="max-h-[calc(100vh-10rem)] overflow-y-auto p-6">{children}</div>
         </div>
       </div>
     </div>

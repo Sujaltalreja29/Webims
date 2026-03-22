@@ -1,19 +1,25 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../store/authStore';
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
-import { Activity } from 'lucide-react';
-import { Link } from "react-router-dom";
+import { Activity, ShieldCheck, ArrowLeft } from 'lucide-react';
 
 import { toast } from 'sonner';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,76 +55,96 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg">
-            <Activity className="text-white" size={32} />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">WebIMS</h1>
-          <p className="text-gray-600">Healthcare Information Management System</p>
-        </div>
-
-        {/* Login Form Card */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-            />
-            <Input
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password" 
-              required
-            />
-            <Button type="submit" className="w-fit" isLoading={isLoading}>
-              Sign In
-            </Button>
-          </form>
-        </div>
-
-        {/* Sign Up Link */}
-      <div className="text-center text-sm text-slate-600">
-        Don't have an account?{' '}
-        <Link to="/signup" className="text-blue-600 hover:text-blue-700 font-medium">
-          Create Account
-        </Link>
-
-        {/* Demo Accounts Card */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
-            <span className="text-lg mr-2">🎯</span>
-            Demo Accounts (Click to auto-fill)
-          </h3>
-          <div className="space-y-2">
-            {demoAccounts.map((account) => (
-              <button
-                key={account.email}
-                type="button"
-                onClick={() => quickFill(account.email)}
-                className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-blue-50 transition-colors text-left border border-transparent hover:border-blue-200"
-              >
-                <span className="text-sm font-medium text-gray-700">{account.role}</span>
-                <span className="text-sm text-blue-600">{account.email}</span>
-              </button>
-            ))}
-          </div>
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center">
-              💡 Password: <span className="font-mono font-semibold bg-gray-100 px-2 py-1 rounded">password</span>
-            </p>
-          </div>
-        </div>
-
+    <div className="relative min-h-screen overflow-hidden bg-linear-to-br from-slate-100 via-white to-blue-50 p-4 sm:p-6">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-24 top-8 h-72 w-72 rounded-full bg-blue-300/20 blur-3xl" />
+        <div className="absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl" />
       </div>
+
+      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center justify-center lg:min-h-[calc(100vh-3rem)]">
+        <div className="grid w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 lg:grid-cols-2">
+          <section className="hidden bg-linear-to-br from-slate-900 via-slate-800 to-blue-900 p-8 text-white lg:block">
+            <div className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+              <ShieldCheck size={14} className="mr-2" />
+              Clinical-grade UX
+            </div>
+            <h1 className="mt-5 text-3xl font-bold tracking-tight">Welcome back to WebIMS</h1>
+            <p className="mt-4 text-sm leading-6 text-blue-100">
+              A professional healthcare workspace designed for physicians, nurses, pharmacists, and operations teams.
+            </p>
+
+            <div className="mt-8 space-y-3">
+              {demoAccounts.map((account) => (
+                <button
+                  key={account.email}
+                  type="button"
+                  onClick={() => quickFill(account.email)}
+                  className="flex w-full items-center justify-between rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-left text-sm transition-colors hover:bg-white/20"
+                >
+                  <span className="font-semibold">{account.role}</span>
+                  <span className="text-blue-100">{account.email}</span>
+                </button>
+              ))}
+            </div>
+
+            <p className="mt-4 text-xs text-blue-100/90">
+              Demo password for all seeded users: <span className="rounded bg-white/20 px-1.5 py-0.5 font-semibold">password</span>
+            </p>
+          </section>
+
+          <section className="p-6 sm:p-8 lg:p-10">
+            <Link
+              to="/"
+              className="mb-6 inline-flex items-center text-sm font-medium text-slate-500 transition-colors hover:text-slate-700"
+            >
+              <ArrowLeft size={16} className="mr-2" />
+              Back to Home
+            </Link>
+
+            <div className="mb-7">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-500/30">
+                <Activity className="text-white" size={24} />
+              </div>
+              <h2 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">Sign in to your workspace</h2>
+              <p className="mt-1 text-sm text-slate-600">Use your clinical account credentials to continue.</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Work Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@webims.com"
+                autoComplete="email"
+                required
+              />
+              <Input
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                autoComplete="current-password"
+                required
+              />
+              <Button type="submit" className="w-full justify-center" isLoading={isLoading}>
+                Sign In
+              </Button>
+            </form>
+
+            <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 lg:hidden">
+              Demo password for seeded accounts: <span className="font-semibold">password</span>
+            </div>
+
+            <p className="mt-6 text-center text-sm text-slate-600">
+              New to WebIMS?{' '}
+              <Link to="/signup" className="font-semibold text-blue-600 transition-colors hover:text-blue-700">
+                Create Account
+              </Link>
+            </p>
+          </section>
+        </div>
       </div>
     </div>
   );

@@ -2,14 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { patientApi } from '../../../core/services/api';
 import { Patient } from '../../../core/models';
-import { Button } from '../../../shared/components/ui/Button';
 import { SearchBar } from '../../../shared/components/SearchBar';
 import { 
   Plus, Eye, Edit, Trash2, Download, Filter, 
-  AlertCircle, User, Phone, Calendar, MapPin 
+  AlertCircle, User, Phone, Calendar 
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { PageShell } from '../../../shared/components/PageShell';
+import { LoadingState } from '../../../shared/components/states/LoadingState';
+import { EmptyState } from '../../../shared/components/states/EmptyState';
 
 export const PatientsListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -98,35 +100,29 @@ export const PatientsListPage: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <LoadingState message="Loading patient registry..." className="h-96" />;
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800">Patient Registry</h1>
-          <p className="text-slate-600 mt-1">Manage patient demographics and records</p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <button className="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors flex items-center space-x-2">
+    <PageShell
+      title="Patient Registry"
+      subtitle="Manage patient demographics and records"
+      actions={(
+        <>
+          <button className="flex items-center space-x-2 rounded-lg border border-slate-300 bg-white px-4 py-2 transition-colors hover:bg-slate-50">
             <Download size={18} />
             <span className="text-sm font-medium">Export</span>
           </button>
           <button
             onClick={() => navigate('/patients/new')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            className="flex items-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
           >
             <Plus size={18} />
             <span className="text-sm font-medium">Register Patient</span>
           </button>
-        </div>
-      </div>
+        </>
+      )}
+    >
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -235,19 +231,26 @@ export const PatientsListPage: React.FC = () => {
       {/* Patients List */}
       <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
         {filteredPatients.length === 0 ? (
-          <div className="text-center py-12">
-            <User className="mx-auto text-slate-300 mb-3" size={48} />
-            <p className="text-slate-500">
-              {searchTerm ? 'No patients found matching your search' : 'No patients registered yet'}
-            </p>
-            {!searchTerm && (
-              <button
-                onClick={() => navigate('/patients/new')}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Register First Patient
-              </button>
-            )}
+          <div className="p-6">
+            <EmptyState
+              title={searchTerm ? 'No patients match your search' : 'No patients registered yet'}
+              description={
+                searchTerm
+                  ? 'Try a different name, MRN, or phone number.'
+                  : 'Create your first patient record to start scheduling and clinical workflows.'
+              }
+              icon={<User size={26} />}
+              action={
+                !searchTerm ? (
+                  <button
+                    onClick={() => navigate('/patients/new')}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                  >
+                    Register First Patient
+                  </button>
+                ) : null
+              }
+            />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -282,7 +285,7 @@ export const PatientsListPage: React.FC = () => {
                   <tr key={patient.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                        <div className="w-10 h-10 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
                           {patient.firstName[0]}{patient.lastName[0]}
                         </div>
                         <div>
@@ -375,6 +378,6 @@ export const PatientsListPage: React.FC = () => {
           Showing {filteredPatients.length} of {patients.length} patients
         </div>
       )}
-    </div>
+    </PageShell>
   );
 };

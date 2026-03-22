@@ -9,6 +9,9 @@ import {
 } from 'lucide-react';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { toast } from 'sonner';
+import { PageShell } from '../../../shared/components/PageShell';
+import { LoadingState } from '../../../shared/components/states/LoadingState';
+import { EmptyState } from '../../../shared/components/states/EmptyState';
 
 
 export const AppointmentsPage: React.FC = () => {
@@ -90,21 +93,19 @@ export const AppointmentsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800">Appointment Scheduling</h1>
-          <p className="text-slate-600 mt-1">Manage patient appointments and schedule</p>
-        </div>
+    <PageShell
+      title="Appointment Scheduling"
+      subtitle="Manage patient appointments and schedule"
+      actions={(
         <button
           onClick={() => navigate('/appointments/new')}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          className="flex items-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
         >
           <Plus size={18} />
           <span>New Appointment</span>
         </button>
-      </div>
+      )}
+    >
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -229,14 +230,21 @@ export const AppointmentsPage: React.FC = () => {
 
         <div className="p-6">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
+            <LoadingState message="Loading appointments..." className="h-40" />
           ) : filteredAppointments.length === 0 ? (
-            <div className="text-center py-12">
-              <Calendar className="mx-auto text-slate-300 mb-3" size={48} />
-              <p className="text-slate-500">No appointments scheduled</p>
-            </div>
+            <EmptyState
+              title="No appointments scheduled"
+              description="Try selecting another day or create a new appointment."
+              icon={<Calendar size={26} />}
+              action={(
+                <button
+                  onClick={() => navigate('/appointments/new')}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                >
+                  Create Appointment
+                </button>
+              )}
+            />
           ) : (
             <div className="space-y-3">
               {filteredAppointments.map((appt) => (
@@ -245,7 +253,7 @@ export const AppointmentsPage: React.FC = () => {
                   className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:shadow-md transition-all"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className="flex flex-col items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border-2 border-blue-200">
+                    <div className="flex flex-col items-center justify-center w-20 h-20 bg-linear-to-br from-blue-50 to-blue-100 rounded-lg border-2 border-blue-200">
                       <span className="text-lg font-bold text-blue-700">{appt.startTime}</span>
                       <span className="text-xs text-slate-600">{appt.duration}min</span>
                     </div>
@@ -315,6 +323,6 @@ export const AppointmentsPage: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 };

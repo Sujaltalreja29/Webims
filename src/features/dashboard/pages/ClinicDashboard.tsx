@@ -3,9 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { appointmentApi, patientApi, prescriptionApi, billingApi } from '../../../core/services/api';
 import { Users, Calendar, Activity, DollarSign, TrendingUp, AlertCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
+import { useAuthStore } from '../../../store/authStore';
+import { Button } from '../../../shared/components/ui/Button';
+import { PageShell } from '../../../shared/components/PageShell';
+import { ACCESS_CONTROL } from '../../../core/constants/access-control';
 
 export const ClinicDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const [stats, setStats] = useState({
     totalPatients: 0,
     todayAppointments: 0,
@@ -45,14 +50,21 @@ export const ClinicDashboard: React.FC = () => {
       });
 
       const appointmentsWithPatients = await Promise.all(
-        appointments.slice(0, 6).map(async (appt) => {
+        [...appointments]
+          .sort((a, b) => a.startTime.localeCompare(b.startTime))
+          .slice(0, 6)
+          .map(async (appt) => {
           const patient = await patientApi.getById(appt.patientId);
           return { ...appt, patient };
         })
       );
 
       setTodayAppointments(appointmentsWithPatients);
-      setRecentPatients(patients.slice(0, 5));
+      setRecentPatients(
+        [...patients]
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 5)
+      );
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
@@ -79,35 +91,49 @@ export const ClinicDashboard: React.FC = () => {
     );
   }
 
+  const actionButtons = [
+    {
+      label: 'Register New Patient',
+      path: '/patients/new',
+      classes: 'bg-blue-50 text-blue-700 hover:bg-blue-100',
+      roles: ACCESS_CONTROL.routes.patients
+    },
+    {
+      label: 'Schedule Appointment',
+      path: '/appointments/new',
+      classes: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+      roles: ACCESS_CONTROL.routes.appointments
+    },
+    {
+      label: 'New Clinical Note',
+      path: '/clinical/new',
+      classes: 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100',
+      roles: ACCESS_CONTROL.routes.clinical
+    }
+  ].filter((action) => (user ? action.roles.includes(user.role) : false));
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800">Clinic Dashboard</h1>
-          <p className="text-slate-600 mt-1">
-            {format(new Date(), 'EEEE, MMMM do, yyyy')}
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          {/* <button className="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium">
-            Export Report
-          </button> */}
-          <button
-            onClick={() => navigate('/appointments/new')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-          >
+    <PageShell
+      title="Clinic Dashboard"
+      subtitle={format(new Date(), 'EEEE, MMMM do, yyyy')}
+      actions={(
+        <>
+          <Button variant="secondary" size="sm" onClick={loadDashboardData}>
+            Refresh
+          </Button>
+          <Button onClick={() => navigate('/appointments/new')} size="sm">
             New Appointment
-          </button>
-        </div>
-      </div>
+          </Button>
+        </>
+      )}
+    >
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Patients */}
         <div
           onClick={() => navigate('/patients')}
-          className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white cursor-pointer hover:shadow-lg transition-all transform hover:scale-105"
+          className="bg-linear-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white cursor-pointer hover:shadow-lg transition-all transform hover:scale-105"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-white/20 rounded-lg">
@@ -123,7 +149,7 @@ export const ClinicDashboard: React.FC = () => {
         {/* Today's Appointments */}
         <div
           onClick={() => navigate('/appointments')}
-          className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white cursor-pointer hover:shadow-lg transition-all transform hover:scale-105"
+          className="bg-linear-to-br from-green-500 to-green-600 rounded-xl p-6 text-white cursor-pointer hover:shadow-lg transition-all transform hover:scale-105"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-white/20 rounded-lg">
@@ -142,7 +168,7 @@ export const ClinicDashboard: React.FC = () => {
         {/* Pending Prescriptions */}
         <div
           onClick={() => navigate('/pharmacy/prescriptions')}
-          className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white cursor-pointer hover:shadow-lg transition-all transform hover:scale-105"
+          className="bg-linear-to-br from-cyan-500 to-blue-600 rounded-xl p-6 text-white cursor-pointer hover:shadow-lg transition-all transform hover:scale-105"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-white/20 rounded-lg">
@@ -160,7 +186,7 @@ export const ClinicDashboard: React.FC = () => {
         {/* Revenue */}
         <div
           onClick={() => navigate('/billing')}
-          className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white cursor-pointer hover:shadow-lg transition-all transform hover:scale-105"
+          className="bg-linear-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white cursor-pointer hover:shadow-lg transition-all transform hover:scale-105"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-white/20 rounded-lg">
@@ -239,26 +265,23 @@ export const ClinicDashboard: React.FC = () => {
           {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h2 className="text-xl font-semibold text-slate-800 mb-4">Quick Actions</h2>
-            <div className="space-y-2">
-              <button
-                onClick={() => navigate('/patients/new')}
-                className="w-full text-left px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium"
-              >
-                + Register New Patient
-              </button>
-              <button
-                onClick={() => navigate('/appointments/new')}
-                className="w-full text-left px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-medium"
-              >
-                + Schedule Appointment
-              </button>
-              <button
-                onClick={() => navigate('/clinical/new')}
-                className="w-full text-left px-4 py-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors font-medium"
-              >
-                + New Clinical Note
-              </button>
-            </div>
+            {actionButtons.length === 0 ? (
+              <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                No quick actions available for your current role.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {actionButtons.map((action) => (
+                  <button
+                    key={action.path}
+                    onClick={() => navigate(action.path)}
+                    className={`w-full rounded-lg px-4 py-3 text-left font-medium transition-colors ${action.classes}`}
+                  >
+                    + {action.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Recent Patients */}
@@ -271,7 +294,7 @@ export const ClinicDashboard: React.FC = () => {
                   onClick={() => navigate(`/patients/${patient.id}`)}
                   className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                  <div className="w-10 h-10 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
                     {patient.firstName[0]}{patient.lastName[0]}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -286,6 +309,6 @@ export const ClinicDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 };
