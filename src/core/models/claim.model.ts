@@ -1,4 +1,19 @@
-export type ClaimStatus = 'Draft' | 'Submitted' | 'Approved' | 'Rejected' | 'Paid';
+export type ClaimStatus = 'Draft' | 'Submitted' | 'Resubmitted' | 'Approved' | 'Rejected' | 'Paid';
+
+export interface ClaimDenialInfo {
+  category: string;
+  reasonCode: string;
+  details?: string;
+  deniedAt: string;
+  deniedBy: string;
+}
+
+export interface ClaimResubmissionInfo {
+  count: number;
+  lastResubmittedAt?: string;
+  lastResubmittedBy?: string;
+  appealNote?: string;
+}
 
 export interface ClaimStatusChange {
   status: ClaimStatus;
@@ -36,6 +51,8 @@ export interface Claim {
   statusHistory?: ClaimStatusChange[];
   paymentReference?: string;
   rejectionReason?: string;
+  denial?: ClaimDenialInfo;
+  resubmission?: ClaimResubmissionInfo;
 
   createdAt: string;
   createdBy: string;

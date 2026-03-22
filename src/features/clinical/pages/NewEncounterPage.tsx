@@ -4,6 +4,7 @@ import { encounterApi, patientApi, appointmentApi, authApi, prescriptionApi, lab
 import { useAuthStore } from '../../../store/authStore';
 import { Patient, Encounter, Prescription, LabResult } from '../../../core/models';
 import { COMMON_DIAGNOSES, COMMON_MEDICATIONS } from '../../../core/constants/medical-codes';
+import { clinicalSafetyService } from '../../../core/services/clinical-safety.service';
 import { ArrowLeft, Save, Search, CheckCircle, Calendar as CalendarIcon, Plus, X, Pill, TestTube, AlertTriangle, Calendar, FileText, Edit, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addDays } from 'date-fns';
@@ -97,7 +98,7 @@ const CurrentMedicationCard: React.FC<CurrentMedicationCardProps> = ({
     <div className="p-4 bg-green-50 border-2 border-green-200 rounded-lg">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-2">
-          <CheckCircle className="text-green-600 flex-shrink-0" size={20} />
+          <CheckCircle className="text-green-600 shrink-0" size={20} />
           <h4 className="font-bold text-slate-800 text-lg">{prescription.medicationName}</h4>
           {prescription.dispensedAt && (
             <span className="text-xs text-slate-500">
@@ -483,6 +484,47 @@ const loadAppointmentData = async (apptId: string) => {
       return;
     }
 
+    if (selectedPatient?.flags.hasAllergies) {
+      const allergyCheck = clinicalSafetyService.checkMedicationAllergy(
+        newPrescription.medicationName,
+        selectedPatient.flags.allergyList
+      );
+
+      if (allergyCheck.hasContraindication) {
+        toast.error(`Medication conflict with allergy: ${allergyCheck.matchedAllergens.join(', ')}`);
+        return;
+      }
+    }
+
+    const existingMedicationSources = [
+      ...patientHistory.activePrescriptions,
+      ...prescriptionDrafts.map((draft) => ({ medicationName: draft.medicationName } as Pick<Prescription, 'medicationName'>))
+    ];
+
+    const hasDuplicate = clinicalSafetyService.checkDuplicateMedication(
+      newPrescription.medicationName,
+      existingMedicationSources
+    );
+
+    if (hasDuplicate) {
+      toast.error('Duplicate medication detected. This medication is already active or drafted.');
+      return;
+    }
+
+    const interactionCheck = clinicalSafetyService.checkDrugInteractions(
+      newPrescription.medicationName,
+      existingMedicationSources
+    );
+
+    if (interactionCheck.severe.length > 0) {
+      toast.error(`Severe drug interaction detected: ${interactionCheck.severe.map((item) => item.description).join('; ')}`);
+      return;
+    }
+
+    if (interactionCheck.moderate.length > 0) {
+      toast.warning(`Moderate interaction warning: ${interactionCheck.moderate.map((item) => item.description).join('; ')}`);
+    }
+
     const draft: PrescriptionDraft = {
       ...newPrescription,
       id: `draft-rx-${Date.now()}`
@@ -566,6 +608,34 @@ const loadAppointmentData = async (apptId: string) => {
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   if (!selectedPatient || !user) return;
+
+  if (!formData.chiefComplaint.trim()) {
+    toast.error('Chief complaint is required');
+    return;
+  }
+
+  if (formData.diagnoses.length === 0) {
+    toast.error('At least one diagnosis is required before saving the encounter');
+    return;
+  }
+
+  if (!formData.assessment.trim() || !formData.plan.trim()) {
+    toast.error('Assessment and treatment plan are required before saving the encounter');
+    return;
+  }
+
+  const parsedTemperature = formData.vitals.temperature ? parseFloat(formData.vitals.temperature) : undefined;
+  const parsedPulse = formData.vitals.pulse ? parseInt(formData.vitals.pulse) : undefined;
+
+  if (parsedTemperature && (parsedTemperature < 92 || parsedTemperature > 108)) {
+    toast.error('Temperature is outside plausible clinical range (92-108 F)');
+    return;
+  }
+
+  if (parsedPulse && (parsedPulse < 30 || parsedPulse > 220)) {
+    toast.error('Pulse is outside plausible clinical range (30-220 bpm)');
+    return;
+  }
 
   setIsLoading(true);
   try {
@@ -761,7 +831,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       {isAutoMode && appointmentData && (
         <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
           <div className="flex items-start space-x-3">
-            <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
+            <CheckCircle className="text-green-600 shrink-0 mt-0.5" size={20} />
             <div className="flex-1">
               <h3 className="font-semibold text-green-900">Appointment Completed</h3>
               <p className="text-sm text-green-700 mt-1">
@@ -824,7 +894,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           ) : selectedPatient ? (
             <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="w-12 h-12 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
                   {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
                 </div>
                 <div>

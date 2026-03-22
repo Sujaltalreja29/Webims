@@ -7,6 +7,9 @@ import { useAuthStore } from '../../../store/authStore';
 import { Button } from '../../../shared/components/ui/Button';
 import { PageShell } from '../../../shared/components/PageShell';
 import { ACCESS_CONTROL } from '../../../core/constants/access-control';
+import { useQueueData } from '../hooks/useQueueData';
+import { QueueCard } from '../components/QueueCard';
+import { LoadingState } from '../../../shared/components/states/LoadingState';
 
 export const ClinicDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +25,7 @@ export const ClinicDashboard: React.FC = () => {
   const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
   const [recentPatients, setRecentPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { loading: loadingQueues, queueItems } = useQueueData(user?.role);
 
   useEffect(() => {
     loadDashboardData();
@@ -198,6 +202,37 @@ export const ClinicDashboard: React.FC = () => {
           <p className="text-3xl font-bold mt-2">${stats.revenue.toFixed(2)}</p>
           <p className="text-sm opacity-75 mt-2">All-time earnings</p>
         </div>
+      </div>
+
+      {/* Role-Based Work Queues */}
+      <div className="rounded-xl border border-slate-200 bg-white p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-slate-800">Role Work Queues</h2>
+          <p className="text-xs text-slate-500">Prioritized operational actions by role</p>
+        </div>
+
+        {loadingQueues ? (
+          <LoadingState message="Loading role queues..." className="h-28" />
+        ) : queueItems.length === 0 ? (
+          <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            No role-specific queues are available for your current profile.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {queueItems.map((queue) => (
+              <QueueCard
+                key={queue.key}
+                title={queue.title}
+                description={queue.description}
+                count={queue.count}
+                path={queue.path}
+                icon={queue.icon}
+                colorClasses={queue.colorClasses}
+                onNavigate={navigate}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Main Content Grid */}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { billingScrubberService } from '../../../core/services/billing-scrubber.service';
 
 // ─── Validation Schema ──────────────────────────────────────────────────────
 const schema = z.object({
@@ -73,6 +74,31 @@ export const NewClaimPage: React.FC = () => {
 
   const watchedPatientId = watch('patientId');
   const watchedEncounterId = watch('encounterId');
+  const watchedVisitDate = watch('visitDate');
+  const watchedInsuranceType = watch('insuranceType');
+  const watchedAmount = watch('totalAmount');
+
+  const scrubberResult = useMemo(
+    () =>
+      billingScrubberService.evaluateClaimDraft({
+        patientId: watchedPatientId,
+        encounterId: watchedEncounterId || undefined,
+        visitDate: watchedVisitDate,
+        insuranceType: watchedInsuranceType,
+        diagnosisCodes: selectedDiagnoses,
+        procedureCodes: selectedProcedures,
+        totalAmount: watchedAmount
+      }),
+    [
+      watchedPatientId,
+      watchedEncounterId,
+      watchedVisitDate,
+      watchedInsuranceType,
+      watchedAmount,
+      selectedDiagnoses,
+      selectedProcedures
+    ]
+  );
 
   // ── Load patients on mount ───────────────────────────────────────────────
   useEffect(() => {
@@ -188,6 +214,26 @@ export const NewClaimPage: React.FC = () => {
   // ── Submit ───────────────────────────────────────────────────────────────
   const onSubmit = async (data: FormData) => {
     if (!user) return;
+
+    const finalScrubberCheck = billingScrubberService.evaluateClaimDraft({
+      patientId: data.patientId,
+      encounterId: data.encounterId || undefined,
+      visitDate: data.visitDate,
+      insuranceType: data.insuranceType,
+      diagnosisCodes: data.diagnosisCodes,
+      procedureCodes: data.procedureCodes,
+      totalAmount: data.totalAmount
+    });
+
+    if (!finalScrubberCheck.isClean) {
+      toast.error(finalScrubberCheck.errors[0]?.message || 'Claim has blocking scrubber errors');
+      return;
+    }
+
+    if (finalScrubberCheck.warnings.length > 0) {
+      toast.warning(`Claim has ${finalScrubberCheck.warnings.length} scrubber warning(s).`);
+    }
+
     setSubmitting(true);
     try {
       const allClaims = await billingApi.getAll();
@@ -209,7 +255,7 @@ export const NewClaimPage: React.FC = () => {
             status: 'Draft',
             changedBy: user.id,
             changedAt: new Date().toISOString(),
-            notes: 'Claim created'
+            notes: `Claim created (scrubber score ${finalScrubberCheck.qualityScore})`
           }
         ],
         createdAt: new Date().toISOString(),
@@ -268,7 +314,7 @@ export const NewClaimPage: React.FC = () => {
                 /* Selected state */
                 <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                    <div className="w-8 h-8 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                       {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
                     </div>
                     <div>
@@ -421,7 +467,7 @@ export const NewClaimPage: React.FC = () => {
 
           {errors.diagnosisCodes && (
             <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-600 text-sm">
-              <AlertCircle size={14} className="mr-2 flex-shrink-0" />
+              <AlertCircle size={14} className="mr-2 shrink-0" />
               {errors.diagnosisCodes.message}
             </div>
           )}
@@ -441,7 +487,7 @@ export const NewClaimPage: React.FC = () => {
                   }`}
                 >
                   <div className="flex items-center space-x-2">
-                    <div className={`w-4 h-4 rounded flex items-center justify-center border flex-shrink-0 ${
+                    <div className={`w-4 h-4 rounded flex items-center justify-center border shrink-0 ${
                       selected ? 'bg-purple-500 border-purple-500' : 'border-slate-300'
                     }`}>
                       {selected && <CheckSquare size={12} className="text-white" />}
@@ -473,7 +519,7 @@ export const NewClaimPage: React.FC = () => {
 
           {errors.procedureCodes && (
             <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-600 text-sm">
-              <AlertCircle size={14} className="mr-2 flex-shrink-0" />
+              <AlertCircle size={14} className="mr-2 shrink-0" />
               {errors.procedureCodes.message}
             </div>
           )}
@@ -493,7 +539,7 @@ export const NewClaimPage: React.FC = () => {
                   }`}
                 >
                   <div className="flex items-start space-x-2">
-                    <div className={`w-4 h-4 rounded flex items-center justify-center border flex-shrink-0 mt-0.5 ${
+                    <div className={`w-4 h-4 rounded flex items-center justify-center border shrink-0 mt-0.5 ${
                       selected ? 'bg-green-500 border-green-500' : 'border-slate-300'
                     }`}>
                       {selected && <CheckSquare size={12} className="text-white" />}
@@ -538,6 +584,59 @@ export const NewClaimPage: React.FC = () => {
               </p>
             )}
           </div>
+        </div>
+
+        {/* ─ Claim Scrubber ─ */}
+        <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-800 flex items-center">
+              <AlertCircle size={20} className="mr-2 text-amber-600" />
+              Claim Scrubber
+            </h2>
+            <span
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                scrubberResult.qualityScore >= 85
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : scrubberResult.qualityScore >= 60
+                  ? 'bg-amber-100 text-amber-700'
+                  : 'bg-red-100 text-red-700'
+              }`}
+            >
+              Quality Score: {scrubberResult.qualityScore}
+            </span>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-700">Blocking Errors</p>
+              <p className="mt-1 text-2xl font-bold text-red-800">{scrubberResult.errors.length}</p>
+            </div>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Warnings</p>
+              <p className="mt-1 text-2xl font-bold text-amber-800">{scrubberResult.warnings.length}</p>
+            </div>
+          </div>
+
+          {scrubberResult.issues.length > 0 ? (
+            <div className="mt-4 space-y-2">
+              {scrubberResult.issues.slice(0, 5).map((issue) => (
+                <div
+                  key={issue.code}
+                  className={`rounded-lg border px-3 py-2 text-sm ${
+                    issue.severity === 'error'
+                      ? 'border-red-200 bg-red-50 text-red-700'
+                      : 'border-amber-200 bg-amber-50 text-amber-800'
+                  }`}
+                >
+                  {issue.message}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              Claim passes scrubber checks and is ready for submission workflow.
+            </div>
+          )}
         </div>
 
         {/* ─ Form Actions ─ */}

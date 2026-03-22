@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import type { UserRole } from '../core/models';
 
@@ -9,6 +9,7 @@ interface RoleProtectedRouteProps {
 }
 
 export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({ roles, children }) => {
+  const location = useLocation();
   const user = useAuthStore((state) => state.user);
 
   if (!user) {
@@ -16,7 +17,17 @@ export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({ roles, c
   }
 
   if (!roles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />;
+    return (
+      <Navigate
+        to="/access-denied"
+        replace
+        state={{
+          attemptedPath: location.pathname,
+          currentRole: user.role,
+          requiredRoles: roles
+        }}
+      />
+    );
   }
 
   return <>{children}</>;

@@ -5,6 +5,7 @@ export * from './encounter.model';
 export * from './prescription.model';
 export * from './claim.model';
 export * from './lab-result.model';
+export * from './audit-log.model';
 // Add these exports
 export * from './medication-inventory.model';
 export * from './resident.model';

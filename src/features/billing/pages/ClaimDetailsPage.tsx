@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { billingApi, patientApi, encounterApi } from '../../../core/services/api';
 import { useAuthStore } from '../../../store/authStore';
@@ -11,11 +11,15 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { billingScrubberService } from '../../../core/services/billing-scrubber.service';
+import { DENIAL_CATEGORIES } from '../../../core/constants/denial-reasons';
+import { getDenialPlaybook } from '../../../core/constants/payer-denial-playbooks';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const STATUS_COLORS: Record<string, string> = {
   Draft:     'bg-gray-100 text-gray-700 border-gray-300',
   Submitted: 'bg-blue-100 text-blue-700 border-blue-300',
+  Resubmitted: 'bg-indigo-100 text-indigo-700 border-indigo-300',
   Approved:  'bg-green-100 text-green-700 border-green-300',
   Rejected:  'bg-red-100 text-red-700 border-red-300',
   Paid:      'bg-purple-100 text-purple-700 border-purple-300'
@@ -24,6 +28,7 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   Draft:     <FileText size={16} />,
   Submitted: <Clock size={16} />,
+  Resubmitted: <Clock size={16} />,
   Approved:  <CheckCircle size={16} />,
   Rejected:  <XCircle size={16} />,
   Paid:      <DollarSign size={16} />
@@ -32,6 +37,7 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
 const TIMELINE_COLORS: Record<string, string> = {
   Draft:     'bg-gray-400',
   Submitted: 'bg-blue-500',
+  Resubmitted: 'bg-indigo-500',
   Approved:  'bg-green-500',
   Rejected:  'bg-red-500',
   Paid:      'bg-purple-500'
@@ -51,6 +57,17 @@ export const ClaimDetailsPage: React.FC = () => {
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [denialCategory, setDenialCategory] = useState(DENIAL_CATEGORIES[0].id);
+  const [denialReasonCode, setDenialReasonCode] = useState(DENIAL_CATEGORIES[0].reasons[0].code);
+  const [denialDetails, setDenialDetails] = useState('');
+  const [showResubmitPrompt, setShowResubmitPrompt] = useState(false);
+  const [appealNote, setAppealNote] = useState('Corrected coding and attached supporting documentation.');
+
+  const scrubberResult = useMemo(() => {
+    if (!claim) return null;
+    return billingScrubberService.evaluateClaimDraft(claim);
+  }, [claim]);
 
   // ── Load data ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -86,8 +103,9 @@ export const ClaimDetailsPage: React.FC = () => {
       await billingApi.submitClaim(claim.id, user.id);
       toast.success('Claim submitted successfully');
       loadData(claim.id);
-    } catch {
-      toast.error('Failed to submit claim');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to submit claim';
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
@@ -109,21 +127,64 @@ export const ClaimDetailsPage: React.FC = () => {
 
   const handleRejectClaim = async () => {
     if (!claim || !user) return;
-    const reason = window.prompt('Enter rejection reason:');
-    if (!reason?.trim()) return;
+    if (!denialReasonCode.trim()) {
+      toast.error('Select a denial reason before rejecting the claim.');
+      return;
+    }
+
     setActionLoading(true);
     try {
-      await billingApi.rejectClaim(claim.id, user.id, reason);
+      await billingApi.rejectClaimStructured(claim.id, user.id, {
+        category: denialCategory,
+        reasonCode: denialReasonCode,
+        details: denialDetails.trim() || undefined
+      });
       toast.success('Claim marked as rejected');
+      setShowRejectForm(false);
+      setDenialDetails('');
       loadData(claim.id);
-    } catch {
-      toast.error('Failed to reject claim');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to reject claim';
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
   };
 
   const handlePrint = () => window.print();
+
+  const handleReopenClaim = async () => {
+    if (!claim || !user) return;
+    const note = window.prompt('Optional note for rework queue:', 'Reopened for coding correction');
+    setActionLoading(true);
+    try {
+      await billingApi.reopenRejectedClaim(claim.id, user.id, note || undefined);
+      toast.success('Claim reopened as Draft');
+      loadData(claim.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to reopen claim';
+      toast.error(message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResubmitClaim = async () => {
+    if (!claim || !user) return;
+
+    setActionLoading(true);
+    try {
+      await billingApi.resubmitClaim(claim.id, user.id, appealNote.trim() || undefined);
+      toast.success('Claim resubmitted to payer');
+      setShowResubmitPrompt(false);
+      loadData(claim.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to resubmit claim';
+      toast.error(message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
@@ -144,10 +205,14 @@ export const ClaimDetailsPage: React.FC = () => {
   }
 
   const canSubmit  = claim.status === 'Draft';
-  const canApprove = claim.status === 'Submitted' && (user?.role === 'ADMIN' || user?.role === 'BILLING');
-  const canReject  = claim.status === 'Submitted' && (user?.role === 'ADMIN' || user?.role === 'BILLING');
+  const canApprove = (claim.status === 'Submitted' || claim.status === 'Resubmitted') && (user?.role === 'ADMIN' || user?.role === 'BILLING');
+  const canReject  = (claim.status === 'Submitted' || claim.status === 'Resubmitted') && (user?.role === 'ADMIN' || user?.role === 'BILLING');
   const canPay     = claim.status === 'Approved';
   const canEdit    = claim.status === 'Draft';
+  const canReopen  = claim.status === 'Rejected' && (user?.role === 'ADMIN' || user?.role === 'BILLING');
+  const canResubmit = claim.status === 'Draft' && !!claim.denial && (user?.role === 'ADMIN' || user?.role === 'BILLING');
+  const currentCategory = DENIAL_CATEGORIES.find((category) => category.id === denialCategory) || DENIAL_CATEGORIES[0];
+  const activePlaybook = getDenialPlaybook(claim.insuranceType);
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -209,8 +274,13 @@ export const ClaimDetailsPage: React.FC = () => {
             {canSubmit && (
               <button
                 onClick={handleSubmitClaim}
-                disabled={actionLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 text-sm font-medium disabled:opacity-60"
+                disabled={actionLoading || (scrubberResult ? scrubberResult.errors.length > 0 : false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                title={
+                  scrubberResult && scrubberResult.errors.length > 0
+                    ? 'Resolve scrubber blocking errors before submitting.'
+                    : 'Submit claim'
+                }
               >
                 <Send size={16} />
                 <span>Submit Claim</span>
@@ -230,12 +300,12 @@ export const ClaimDetailsPage: React.FC = () => {
 
             {canReject && (
               <button
-                onClick={handleRejectClaim}
+                onClick={() => setShowRejectForm((prev) => !prev)}
                 disabled={actionLoading}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center space-x-2 text-sm font-medium disabled:opacity-60"
               >
                 <XCircle size={16} />
-                <span>Reject</span>
+                <span>{showRejectForm ? 'Cancel Reject' : 'Reject'}</span>
               </button>
             )}
 
@@ -248,8 +318,117 @@ export const ClaimDetailsPage: React.FC = () => {
                 <span>Record Payment</span>
               </button>
             )}
+
+            {canReopen && (
+              <button
+                onClick={handleReopenClaim}
+                disabled={actionLoading}
+                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 flex items-center space-x-2 text-sm font-medium disabled:opacity-60"
+              >
+                <Edit2 size={16} />
+                <span>Reopen for Correction</span>
+              </button>
+            )}
+
+            {canResubmit && (
+              <button
+                onClick={() => setShowResubmitPrompt((prev) => !prev)}
+                disabled={actionLoading}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2 text-sm font-medium disabled:opacity-60"
+              >
+                <Send size={16} />
+                <span>{showResubmitPrompt ? 'Cancel Resubmit' : 'Resubmit Claim'}</span>
+              </button>
+            )}
           </div>
         </div>
+
+        {showRejectForm && canReject && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <h3 className="text-sm font-semibold text-red-800">Structured Denial</h3>
+            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-red-700">Category</label>
+                <select
+                  value={denialCategory}
+                  onChange={(event) => {
+                    const nextCategory = event.target.value;
+                    setDenialCategory(nextCategory);
+                    const nextReason = DENIAL_CATEGORIES.find((category) => category.id === nextCategory)?.reasons[0]?.code;
+                    if (nextReason) setDenialReasonCode(nextReason);
+                  }}
+                  className="mt-1 w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm"
+                >
+                  {DENIAL_CATEGORIES.map((category) => (
+                    <option key={category.id} value={category.id}>{category.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-red-700">Reason</label>
+                <select
+                  value={denialReasonCode}
+                  onChange={(event) => setDenialReasonCode(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm"
+                >
+                  {currentCategory.reasons.map((reason) => (
+                    <option key={reason.code} value={reason.code}>{reason.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-red-700">Details</label>
+                <input
+                  value={denialDetails}
+                  onChange={(event) => setDenialDetails(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm"
+                  placeholder="Optional denial notes"
+                />
+              </div>
+            </div>
+            <div className="mt-3 flex justify-end">
+              <button
+                onClick={handleRejectClaim}
+                disabled={actionLoading}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                Submit Denial
+              </button>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-red-200 bg-white p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-700">Payer Playbook</p>
+              <p className="mt-1 text-sm font-semibold text-slate-800">{activePlaybook.title}</p>
+              <p className="text-xs text-slate-500">Target turnaround: {activePlaybook.targetTurnaroundDays} days</p>
+              <ul className="mt-2 space-y-1 text-xs text-slate-700">
+                {activePlaybook.actions.map((action) => (
+                  <li key={action}>• {action}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {showResubmitPrompt && canResubmit && (
+          <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+            <h3 className="text-sm font-semibold text-indigo-800">Appeal and Resubmission Note</h3>
+            <textarea
+              value={appealNote}
+              onChange={(event) => setAppealNote(event.target.value)}
+              rows={3}
+              className="mt-2 w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm"
+            />
+            <div className="mt-3 flex justify-end">
+              <button
+                onClick={handleResubmitClaim}
+                disabled={actionLoading}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+              >
+                Confirm Resubmission
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ── Main Content: 2-column ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -264,7 +443,7 @@ export const ClaimDetailsPage: React.FC = () => {
                 Patient Information
               </h2>
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                <div className="w-12 h-12 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                   {patient.firstName[0]}{patient.lastName[0]}
                 </div>
                 <div className="flex-1">
@@ -360,7 +539,7 @@ export const ClaimDetailsPage: React.FC = () => {
                       key={i}
                       className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg border border-purple-100"
                     >
-                      <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0">
                         {i + 1}
                       </span>
                       <span className="text-sm text-slate-800">{code}</span>
@@ -386,7 +565,7 @@ export const ClaimDetailsPage: React.FC = () => {
                       className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100"
                     >
                       <div className="flex items-center space-x-3">
-                        <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                        <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0">
                           {i + 1}
                         </span>
                         <span className="text-sm text-slate-800">{code}</span>
@@ -457,6 +636,13 @@ export const ClaimDetailsPage: React.FC = () => {
                   Rejection Reason
                 </h2>
                 <p className="text-red-700">{claim.rejectionReason}</p>
+                {claim.denial && (
+                  <div className="mt-3 rounded-lg border border-red-200 bg-white p-3 text-xs text-slate-700">
+                    <p><span className="font-semibold">Category:</span> {claim.denial.category}</p>
+                    <p><span className="font-semibold">Reason Code:</span> {claim.denial.reasonCode}</p>
+                    {claim.denial.details ? <p><span className="font-semibold">Details:</span> {claim.denial.details}</p> : null}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -514,7 +700,7 @@ export const ClaimDetailsPage: React.FC = () => {
                     {[...claim.statusHistory].reverse().map((entry, i) => (
                       <div key={i} className="flex items-start space-x-3 relative pl-1">
                         {/* Dot */}
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${TIMELINE_COLORS[entry.status]}`}>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 ${TIMELINE_COLORS[entry.status]}`}>
                           <div className="w-2 h-2 bg-white rounded-full" />
                         </div>
                         <div className="flex-1 min-w-0 pb-2">
@@ -531,6 +717,54 @@ export const ClaimDetailsPage: React.FC = () => {
                       </div>
                     ))}
                   </div>
+
+                  {scrubberResult && (
+                    <div className="bg-white rounded-lg border border-slate-200 p-6">
+                      <h2 className="text-base font-semibold text-slate-800 mb-3">Claim Scrubber</h2>
+                      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <p className="text-sm text-slate-600">Quality Score</p>
+                        <p
+                          className={`text-lg font-bold ${
+                            scrubberResult.qualityScore >= 85
+                              ? 'text-emerald-700'
+                              : scrubberResult.qualityScore >= 60
+                              ? 'text-amber-700'
+                              : 'text-red-700'
+                          }`}
+                        >
+                          {scrubberResult.qualityScore}
+                        </p>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <div className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-2 text-center">
+                          <p className="text-xs uppercase tracking-wide text-red-700">Errors</p>
+                          <p className="text-lg font-semibold text-red-800">{scrubberResult.errors.length}</p>
+                        </div>
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-center">
+                          <p className="text-xs uppercase tracking-wide text-amber-700">Warnings</p>
+                          <p className="text-lg font-semibold text-amber-800">{scrubberResult.warnings.length}</p>
+                        </div>
+                      </div>
+
+                      {scrubberResult.issues.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          {scrubberResult.issues.slice(0, 4).map((issue) => (
+                            <div
+                              key={issue.code}
+                              className={`rounded-lg border px-2.5 py-2 text-xs ${
+                                issue.severity === 'error'
+                                  ? 'border-red-200 bg-red-50 text-red-700'
+                                  : 'border-amber-200 bg-amber-50 text-amber-800'
+                              }`}
+                            >
+                              {issue.message}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

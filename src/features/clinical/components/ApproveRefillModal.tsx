@@ -4,9 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, CheckCircle } from 'lucide-react';
 import { refillRequestApi, prescriptionApi } from '../../../core/services/api';
+import { clinicalSafetyService } from '../../../core/services/clinical-safety.service';
 import { useAuthStore } from '../../../store/authStore';
 import type { RefillRequest, Prescription } from '../../../core/models';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 interface ApproveRefillModalProps {
   request: RefillRequest;
@@ -32,8 +34,15 @@ export const ApproveRefillModal = ({ request, prescription, onClose, onSuccess }
     resolver: zodResolver(approveSchema)
   });
 
+  const eligibility = clinicalSafetyService.validateRefillEligibility(prescription);
+
   const onSubmit = async (data: ApproveFormData) => {
     if (!user) return;
+
+    if (!eligibility.eligible) {
+      toast.error(eligibility.reason || 'This refill request is not eligible for approval.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -120,6 +129,18 @@ export const ApproveRefillModal = ({ request, prescription, onClose, onSuccess }
             </div>
           )}
 
+          {!eligibility.eligible && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-sm text-red-700 font-medium">Refill not eligible</p>
+              <p className="text-sm text-red-700 mt-1">{eligibility.reason}</p>
+              {eligibility.nextEligibleDate && (
+                <p className="text-xs text-red-600 mt-2">
+                  Next eligible date: {format(new Date(eligibility.nextEligibleDate), 'MMM dd, yyyy')}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Notes */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -144,7 +165,7 @@ export const ApproveRefillModal = ({ request, prescription, onClose, onSuccess }
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !eligibility.eligible}
               className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CheckCircle size={18} className="mr-2" />
