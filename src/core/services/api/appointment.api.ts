@@ -6,6 +6,46 @@ class AppointmentApiService extends BaseApiService<Appointment> {
     super('appointments');
   }
 
+  private toMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  private rangesOverlap(startA: number, durationA: number, startB: number, durationB: number): boolean {
+    const endA = startA + durationA;
+    const endB = startB + durationB;
+    return startA < endB && startB < endA;
+  }
+
+  private isPastDateTime(date: string, startTime: string): boolean {
+    const [year, month, day] = date.split('-').map(Number);
+    const [hours, minutes] = startTime.split(':').map(Number);
+
+    if ([year, month, day, hours, minutes].some((part) => Number.isNaN(part))) {
+      return false;
+    }
+
+    const appointmentDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+    return appointmentDateTime.getTime() <= Date.now();
+  }
+
+  async validateAppointmentSlot(
+    providerId: string,
+    date: string,
+    startTime: string,
+    duration: number,
+    excludeId?: string
+  ): Promise<void> {
+    if (this.isPastDateTime(date, startTime)) {
+      throw new Error('Cannot book appointments in the past.');
+    }
+
+    const hasConflict = await this.checkTimeConflict(providerId, date, startTime, duration, excludeId);
+    if (hasConflict) {
+      throw new Error('This time slot overlaps with another appointment for the provider.');
+    }
+  }
+
   generateAppointmentNumber(): string {
     const timestamp = Date.now().toString().slice(-8);
     return `APT${timestamp}`;
@@ -20,7 +60,19 @@ class AppointmentApiService extends BaseApiService<Appointment> {
   }
 
   getByDate(date: string): Promise<Appointment[]> {
-    return this.search(a => a.date === date);
+    return this.search(a => a.date === date).then((appointments) =>
+      [...appointments].sort((a, b) => a.startTime.localeCompare(b.startTime))
+    );
+  }
+
+  getProviderSchedule(providerId: string, date: string, excludeId?: string): Promise<Appointment[]> {
+    return this.search((appointment) =>
+      appointment.providerId === providerId &&
+      appointment.date === date &&
+      appointment.id !== excludeId &&
+      appointment.status !== 'Cancelled' &&
+      appointment.status !== 'No-show'
+    ).then((appointments) => [...appointments].sort((a, b) => a.startTime.localeCompare(b.startTime)));
   }
 
   getByStatus(status: Appointment['status']): Promise<Appointment[]> {
@@ -47,8 +99,18 @@ class AppointmentApiService extends BaseApiService<Appointment> {
       a.id !== excludeId &&
       (a.status !== 'Cancelled' && a.status !== 'No-show')
     ).then(appointments => {
-      return appointments.some(a => a.startTime === startTime);
+      const requestedStart = this.toMinutes(startTime);
+      return appointments.some((appointment) => {
+        const existingStart = this.toMinutes(appointment.startTime);
+        const existingDuration = appointment.duration || 30;
+        return this.rangesOverlap(requestedStart, duration, existingStart, existingDuration);
+      });
     });
+  }
+
+  async create(item: Appointment): Promise<Appointment> {
+    await this.validateAppointmentSlot(item.providerId, item.date, item.startTime, item.duration);
+    return super.create(item);
   }
 
   async cancelAppointment(
@@ -129,6 +191,14 @@ class AppointmentApiService extends BaseApiService<Appointment> {
     const original = await this.getById(originalId);
     if (!original) return { original: null, new: null };
 
+    await this.validateAppointmentSlot(
+      original.providerId,
+      newDate,
+      newTime,
+      original.duration,
+      originalId
+    );
+
     // Create new appointment with same details
     const newAppointment: Appointment = {
       ...original,
@@ -147,6 +217,9 @@ class AppointmentApiService extends BaseApiService<Appointment> {
       createdAt: new Date().toISOString()
     };
 
+    // Persist the replacement appointment first, then cancel original.
+    const created = await super.create(newAppointment);
+
     // Cancel original appointment
     await this.cancelAppointment(
       originalId,
@@ -159,9 +232,6 @@ class AppointmentApiService extends BaseApiService<Appointment> {
     await this.update(originalId, {
       rescheduledTo: newAppointment.id
     } as Partial<Appointment>);
-
-    // Create new appointment
-    const created = await this.create(newAppointment);
 
     return { original, new: created };
   }

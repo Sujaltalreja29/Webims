@@ -18,6 +18,7 @@ export const NewAppointmentPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingConflict, setIsCheckingConflict] = useState(false);
   const [hasConflict, setHasConflict] = useState(false);
+  const [providerDayAppointments, setProviderDayAppointments] = useState<Appointment[]>([]);
 
   const [formData, setFormData] = useState({
     providerId: '',
@@ -40,7 +41,48 @@ export const NewAppointmentPage: React.FC = () => {
     if (formData.providerId && formData.date && formData.startTime) {
       checkTimeConflict();
     }
-  }, [formData.providerId, formData.date, formData.startTime]);
+  }, [formData.providerId, formData.date, formData.startTime, formData.duration]);
+
+  useEffect(() => {
+    const loadProviderDayAppointments = async () => {
+      if (!formData.providerId || !formData.date) {
+        setProviderDayAppointments([]);
+        return;
+      }
+
+      const schedule = await appointmentApi.getProviderSchedule(formData.providerId, formData.date);
+      setProviderDayAppointments(schedule);
+    };
+
+    loadProviderDayAppointments();
+  }, [formData.providerId, formData.date]);
+
+  const isPastDateTime = (date: string, time: string): boolean => {
+    const [year, month, day] = date.split('-').map(Number);
+    const [hours, minutes] = time.split(':').map(Number);
+    if ([year, month, day, hours, minutes].some((part) => Number.isNaN(part))) {
+      return false;
+    }
+
+    const selectedDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+    return selectedDateTime.getTime() <= Date.now();
+  };
+
+  const toMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const hasSlotOverlap = (slot: string): boolean => {
+    const slotStart = toMinutes(slot);
+    const slotEnd = slotStart + formData.duration;
+
+    return providerDayAppointments.some((appointment) => {
+      const appointmentStart = toMinutes(appointment.startTime);
+      const appointmentEnd = appointmentStart + (appointment.duration || 30);
+      return slotStart < appointmentEnd && appointmentStart < slotEnd;
+    });
+  };
 
   const loadData = async () => {
     const [patientsData, usersData] = await Promise.all([
@@ -113,6 +155,10 @@ export const NewAppointmentPage: React.FC = () => {
       newErrors.startTime = 'Please select a time';
     }
 
+    if (formData.date && formData.startTime && isPastDateTime(formData.date, formData.startTime)) {
+      newErrors.startTime = 'Please choose a future time slot';
+    }
+
     if (hasConflict) {
       newErrors.conflict = 'This time slot conflicts with another appointment';
     }
@@ -152,7 +198,8 @@ export const NewAppointmentPage: React.FC = () => {
       toast.success('Appointment scheduled successfully!');
       navigate('/appointments');
     } catch (error) {
-      toast.error('Failed to create appointment');
+      const message = error instanceof Error ? error.message : 'Failed to create appointment';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -170,6 +217,22 @@ export const NewAppointmentPage: React.FC = () => {
     '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
     '16:00', '16:30', '17:00', '17:30'
   ];
+
+  const isSlotPast = (time: string): boolean => isPastDateTime(formData.date, time);
+  const isSlotBooked = (time: string): boolean => hasSlotOverlap(time);
+  const isSlotDisabled = (time: string): boolean => isSlotPast(time) || isSlotBooked(time);
+
+  const availableTimeSlots = timeSlots.filter((time) => !isSlotDisabled(time));
+
+  useEffect(() => {
+    if (!formData.startTime || availableTimeSlots.length === 0) {
+      return;
+    }
+
+    if (!availableTimeSlots.includes(formData.startTime)) {
+      setFormData((prev) => ({ ...prev, startTime: availableTimeSlots[0] }));
+    }
+  }, [formData.startTime, availableTimeSlots]);
 
   const appointmentTypes: Appointment['appointmentType'][] = [
     'New Patient',
@@ -250,7 +313,7 @@ export const NewAppointmentPage: React.FC = () => {
                         className="w-full p-4 text-left hover:bg-blue-50 transition-colors flex items-center justify-between"
                       >
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                          <div className="w-10 h-10 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
                             {patient.firstName[0]}{patient.lastName[0]}
                           </div>
                           <div>
@@ -274,7 +337,7 @@ export const NewAppointmentPage: React.FC = () => {
           ) : (
             <div className="flex items-center justify-between p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="w-12 h-12 bg-linear-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
                   {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
                 </div>
                 <div>
@@ -356,7 +419,7 @@ export const NewAppointmentPage: React.FC = () => {
 
               {hasConflict && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-2">
-                  <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={18} />
+                  <AlertCircle className="text-red-600 shrink-0 mt-0.5" size={18} />
                   <div>
                     <p className="text-sm font-medium text-red-800">Time Conflict Detected</p>
                     <p className="text-xs text-red-700 mt-1">
@@ -371,38 +434,90 @@ export const NewAppointmentPage: React.FC = () => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Date <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => handleChange('date', e.target.value)}
-                    min={format(new Date(), 'yyyy-MM-dd')}
-                    max={format(addDays(new Date(), 90), 'yyyy-MM-dd')}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleChange('date', format(new Date(), 'yyyy-MM-dd'))}
+                      className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-blue-300 hover:text-blue-700"
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('date', format(addDays(new Date(), 1), 'yyyy-MM-dd'))}
+                      className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-blue-300 hover:text-blue-700"
+                    >
+                      Tomorrow
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleChange('date', format(addDays(new Date(), 7), 'yyyy-MM-dd'))}
+                      className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-blue-300 hover:text-blue-700"
+                    >
+                      +7 Days
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => handleChange('date', e.target.value)}
+                      min={format(new Date(), 'yyyy-MM-dd')}
+                      max={format(addDays(new Date(), 90), 'yyyy-MM-dd')}
+                      className="w-full rounded-xl border border-slate-200 bg-linear-to-r from-white to-slate-50 px-4 py-3 pr-10 text-slate-900 shadow-sm transition focus:border-blue-400 focus:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                    <Calendar className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">Selected: {format(new Date(formData.date), 'EEEE, MMM d')}</p>
+                  {errors.date && <p className="mt-1 text-sm text-red-600">{errors.date}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Time <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    value={formData.startTime}
-                    onChange={(e) => handleChange('startTime', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                      hasConflict 
-                        ? 'border-red-300 focus:ring-red-500' 
-                        : 'border-slate-300 focus:ring-blue-500'
-                    }`}
-                    required
-                  >
-                    {timeSlots.map(time => (
-                      <option key={time} value={time}>{time}</option>
-                    ))}
-                  </select>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div className="mb-2 flex items-center justify-between text-xs text-slate-600">
+                      <span>Pick a time slot</span>
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-500"></span>Open</span>
+                        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-slate-400"></span>Unavailable</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                      {timeSlots.map((time) => {
+                        const disabled = isSlotDisabled(time);
+                        const selected = formData.startTime === time;
+
+                        return (
+                          <button
+                            key={time}
+                            type="button"
+                            onClick={() => !disabled && handleChange('startTime', time)}
+                            disabled={disabled}
+                            className={`rounded-lg border px-2 py-2 text-sm font-medium transition ${
+                              selected
+                                ? 'border-blue-600 bg-blue-600 text-white shadow'
+                                : disabled
+                                ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+                                : 'border-slate-300 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50'
+                            }`}
+                            aria-label={`${time} ${disabled ? 'unavailable' : 'available'}`}
+                          >
+                            {time}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {availableTimeSlots.length === 0 && (
+                    <p className="mt-1 text-xs text-amber-700">No open slots left for this provider on this date.</p>
+                  )}
                   {isCheckingConflict && (
                     <p className="mt-1 text-xs text-slate-500">Checking availability...</p>
                   )}
+                  {errors.startTime && <p className="mt-1 text-sm text-red-600">{errors.startTime}</p>}
                 </div>
 
                 <div>

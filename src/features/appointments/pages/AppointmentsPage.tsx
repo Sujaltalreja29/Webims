@@ -37,6 +37,7 @@ export const AppointmentsPage: React.FC = () => {
         })
       );
 
+      withPatients.sort((a, b) => a.startTime.localeCompare(b.startTime));
       setAppointments(withPatients);
     } catch (error) {
       toast.error('Failed to load appointments');

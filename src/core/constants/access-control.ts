@@ -18,9 +18,12 @@ export const ACCESS_CONTROL = {
     { label: 'Register New Patient', path: '/patients/new', roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'] as UserRole[] },
     { label: 'Schedule Appointment', path: '/appointments/new', roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'] as UserRole[] },
     { label: 'Create Encounter', path: '/clinical/new', roles: ['DOCTOR', 'NURSE', 'ADMIN'] as UserRole[] },
+    { label: 'Add New Care Note', path: '/ltc/care-notes/new', roles: ['NURSE', 'DOCTOR', 'ADMIN'] as UserRole[] },
+    { label: 'Add LTC Resident', path: '/ltc/residents/new', roles: ['NURSE', 'DOCTOR', 'ADMIN'] as UserRole[] },
     { label: 'Review Refill Requests', path: '/clinical/refill-requests', roles: ['DOCTOR', 'ADMIN'] as UserRole[] },
     { label: 'Create Claim', path: '/billing/new', roles: ['BILLING', 'ADMIN'] as UserRole[] },
     { label: 'Open Prescription Queue', path: '/pharmacy/prescriptions', roles: ['PHARMACIST', 'DOCTOR', 'ADMIN'] as UserRole[] },
+    { label: 'Add Medication', path: '/pharmacy/inventory/new', roles: ['PHARMACIST', 'ADMIN'] as UserRole[] },
     { label: 'Open Inventory', path: '/pharmacy/inventory', roles: ['PHARMACIST', 'ADMIN'] as UserRole[] },
     { label: 'Open LTC Residents', path: '/ltc/residents', roles: ['NURSE', 'DOCTOR', 'ADMIN'] as UserRole[] }
   ]

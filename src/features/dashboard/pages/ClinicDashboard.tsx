@@ -113,6 +113,24 @@ export const ClinicDashboard: React.FC = () => {
       path: '/clinical/new',
       classes: 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100',
       roles: ACCESS_CONTROL.routes.clinical
+    },
+    {
+      label: 'Add New Care Note',
+      path: '/ltc/care-notes/new',
+      classes: 'bg-violet-50 text-violet-700 hover:bg-violet-100',
+      roles: ACCESS_CONTROL.routes.ltc
+    },
+    {
+      label: 'Add Resident (LTC)',
+      path: '/ltc/residents/new',
+      classes: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100',
+      roles: ACCESS_CONTROL.routes.ltc
+    },
+    {
+      label: 'Add Medication',
+      path: '/pharmacy/inventory/new',
+      classes: 'bg-amber-50 text-amber-700 hover:bg-amber-100',
+      roles: ACCESS_CONTROL.routes.pharmacyInventory
     }
   ].filter((action) => (user ? action.roles.includes(user.role) : false));
 

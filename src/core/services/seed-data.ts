@@ -3,10 +3,356 @@ import { storageService } from './storage.service';
 import type { MedicationInventory, StockTransaction } from '../models';
 import type { Resident, CareNote } from '../models';
 
+const toDateOnly = (date: Date): string => date.toISOString().split('T')[0];
+
+const addDays = (date: Date, days: number): Date => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
+
+const buildRollingVisitSeed = () => {
+  const today = new Date();
+  const twoDaysAgo = toDateOnly(addDays(today, -2));
+  const yesterday = toDateOnly(addDays(today, -1));
+  const todayStr = toDateOnly(today);
+  const tomorrow = toDateOnly(addDays(today, 1));
+
+  const appointments: Appointment[] = [
+    {
+      id: 'appt-1',
+      appointmentNumber: 'APT12345001',
+      patientId: 'patient-1',
+      providerId: 'user-1',
+      appointmentType: 'Follow-up',
+      date: twoDaysAgo,
+      startTime: '09:00',
+      duration: 30,
+      status: 'Completed',
+      reason: 'Blood pressure follow-up',
+      createdAt: new Date().toISOString(),
+      createdBy: 'user-3'
+    },
+    {
+      id: 'appt-2',
+      appointmentNumber: 'APT12345002',
+      patientId: 'patient-2',
+      providerId: 'user-1',
+      appointmentType: 'Follow-up',
+      date: yesterday,
+      startTime: '10:00',
+      duration: 30,
+      status: 'Completed',
+      reason: 'Diabetes medication check',
+      createdAt: new Date().toISOString(),
+      createdBy: 'user-3'
+    },
+    {
+      id: 'appt-3',
+      appointmentNumber: 'APT12345003',
+      patientId: 'patient-3',
+      providerId: 'user-1',
+      appointmentType: 'Urgent',
+      date: todayStr,
+      startTime: '14:00',
+      duration: 30,
+      status: 'Checked-in',
+      reason: 'Fever and cough',
+      createdAt: new Date().toISOString(),
+      createdBy: 'user-3'
+    },
+    {
+      id: 'appt-4',
+      appointmentNumber: 'APT12345004',
+      patientId: 'patient-1',
+      providerId: 'user-1',
+      appointmentType: 'Follow-up',
+      date: todayStr,
+      startTime: '16:00',
+      duration: 30,
+      status: 'Scheduled',
+      reason: 'Review blood pressure log',
+      createdAt: new Date().toISOString(),
+      createdBy: 'user-3'
+    },
+    {
+      id: 'appt-5',
+      appointmentNumber: 'APT12345005',
+      patientId: 'patient-2',
+      providerId: 'user-1',
+      appointmentType: 'Follow-up',
+      date: tomorrow,
+      startTime: '09:30',
+      duration: 30,
+      status: 'Scheduled',
+      reason: 'Lab results review',
+      createdAt: new Date().toISOString(),
+      createdBy: 'user-3'
+    },
+    {
+      id: 'appt-6',
+      appointmentNumber: 'APT12345006',
+      patientId: 'patient-3',
+      providerId: 'user-1',
+      appointmentType: 'Telehealth',
+      date: tomorrow,
+      startTime: '11:30',
+      duration: 20,
+      status: 'Scheduled',
+      reason: 'Symptom follow-up',
+      createdAt: new Date().toISOString(),
+      createdBy: 'user-3'
+    }
+  ];
+
+  const encounters: Encounter[] = [
+    {
+      id: 'enc-1',
+      encounterNumber: 'ENC12345001',
+      patientId: 'patient-1',
+      providerId: 'user-1',
+      appointmentId: 'appt-1',
+      visitDate: twoDaysAgo,
+      chiefComplaint: 'Follow-up for hypertension',
+      vitals: {
+        bloodPressure: '136/86',
+        pulse: 76,
+        temperature: 98.4,
+        weight: 184,
+        height: 72
+      },
+      diagnoses: ['Hypertension (High Blood Pressure)'],
+      assessment: 'Blood pressure improved compared with previous visit.',
+      plan: 'Continue Lisinopril 20mg daily. Home BP checks and low-sodium diet.',
+      status: 'Closed',
+      followUpDate: tomorrow,
+      createdAt: new Date().toISOString(),
+      createdBy: 'user-1'
+    },
+    {
+      id: 'enc-2',
+      encounterNumber: 'ENC12345002',
+      patientId: 'patient-2',
+      providerId: 'user-1',
+      appointmentId: 'appt-2',
+      visitDate: yesterday,
+      chiefComplaint: 'Diabetes management follow-up',
+      vitals: {
+        bloodPressure: '128/82',
+        pulse: 74,
+        temperature: 98.5,
+        weight: 161,
+        height: 66
+      },
+      diagnoses: ['Type 2 Diabetes Mellitus'],
+      assessment: 'Glucose trend stable with current regimen.',
+      plan: 'Maintain current medications. Repeat A1c in 3 months.',
+      status: 'Closed',
+      followUpDate: tomorrow,
+      createdAt: new Date().toISOString(),
+      createdBy: 'user-1'
+    }
+  ];
+
+  const claims: Claim[] = [
+    {
+      id: 'claim-1',
+      claimNumber: 'CLM12345001',
+      patientId: 'patient-1',
+      encounterId: 'enc-1',
+      visitDate: twoDaysAgo,
+      diagnosisCodes: ['Hypertension (High Blood Pressure)'],
+      procedureCodes: ['Office Visit - Established Patient'],
+      totalAmount: 150,
+      insuranceType: 'Private',
+      status: 'Paid',
+      payment: {
+        amountPaid: 150,
+        paidDate: yesterday,
+        method: 'Insurance',
+        referenceNumber: 'EOB-15001'
+      },
+      createdAt: new Date().toISOString(),
+      createdBy: 'user-4'
+    },
+    {
+      id: 'claim-2',
+      claimNumber: 'CLM12345002',
+      patientId: 'patient-2',
+      encounterId: 'enc-2',
+      visitDate: yesterday,
+      diagnosisCodes: ['Type 2 Diabetes Mellitus'],
+      procedureCodes: ['Office Visit - Established Patient'],
+      totalAmount: 145,
+      insuranceType: 'Medicare',
+      status: 'Submitted',
+      createdAt: new Date().toISOString(),
+      createdBy: 'user-4'
+    }
+  ];
+
+  return {
+    appointments,
+    encounters,
+    claims
+  };
+};
+
+const extraSeedUsers: User[] = [
+  {
+    id: 'user-7',
+    fullName: 'Dr. Olivia Carter',
+    email: 'doctor2@webims.com',
+    password: 'password',
+    role: 'DOCTOR',
+    department: 'CLINIC',
+    phone: '555-0107',
+    createdAt: new Date().toISOString(),
+    isActive: true
+  },
+  {
+    id: 'user-8',
+    fullName: 'Daniel Kim',
+    email: 'nurse2@webims.com',
+    password: 'password',
+    role: 'NURSE',
+    department: 'CLINIC',
+    phone: '555-0108',
+    createdAt: new Date().toISOString(),
+    isActive: true
+  }
+];
+
+const extraSeedPatients: Patient[] = [
+  {
+    id: 'patient-4',
+    mrn: 'MRN001234570',
+    firstName: 'Patricia',
+    lastName: 'Lopez',
+    dateOfBirth: '1968-05-04',
+    gender: 'Female',
+    phone: '555-4001',
+    email: 'patricia.lopez@email.com',
+    address: {
+      street: '210 Willow St',
+      city: 'Springfield',
+      state: 'IL',
+      zipCode: '62704'
+    },
+    emergencyContact: {
+      name: 'Miguel Lopez',
+      relationship: 'Spouse',
+      phone: '555-4002'
+    },
+    insurance: {
+      type: 'Private',
+      insuranceId: 'INS555901',
+      payerName: 'Aetna'
+    },
+    flags: {
+      hasAllergies: false,
+      isHighRisk: false
+    },
+    createdAt: new Date().toISOString(),
+    createdBy: 'user-3',
+    isActive: true
+  },
+  {
+    id: 'patient-5',
+    mrn: 'MRN001234571',
+    firstName: 'Ronald',
+    lastName: 'Baker',
+    dateOfBirth: '1959-12-18',
+    gender: 'Male',
+    phone: '555-5001',
+    email: 'ronald.baker@email.com',
+    address: {
+      street: '88 Riverbend Dr',
+      city: 'Springfield',
+      state: 'IL',
+      zipCode: '62705'
+    },
+    emergencyContact: {
+      name: 'Sandra Baker',
+      relationship: 'Wife',
+      phone: '555-5002'
+    },
+    insurance: {
+      type: 'Medicare',
+      insuranceId: 'MED129991',
+      payerName: 'Medicare'
+    },
+    flags: {
+      hasAllergies: true,
+      allergyList: 'Sulfa drugs',
+      isHighRisk: true
+    },
+    createdAt: new Date().toISOString(),
+    createdBy: 'user-3',
+    isActive: true
+  },
+  {
+    id: 'patient-6',
+    mrn: 'MRN001234572',
+    firstName: 'Aisha',
+    lastName: 'Patel',
+    dateOfBirth: '1995-09-27',
+    gender: 'Female',
+    phone: '555-6001',
+    email: 'aisha.patel@email.com',
+    address: {
+      street: '742 Cedar View',
+      city: 'Springfield',
+      state: 'IL',
+      zipCode: '62706'
+    },
+    emergencyContact: {
+      name: 'Rahul Patel',
+      relationship: 'Brother',
+      phone: '555-6002'
+    },
+    insurance: {
+      type: 'Medicaid',
+      insuranceId: 'MCD778201',
+      payerName: 'Illinois Medicaid'
+    },
+    flags: {
+      hasAllergies: false,
+      isHighRisk: false
+    },
+    createdAt: new Date().toISOString(),
+    createdBy: 'user-3',
+    isActive: true
+  }
+];
+
+const mergeById = <T extends { id: string }>(existing: T[], incoming: T[]): T[] => {
+  const existingIds = new Set(existing.map((item) => item.id));
+  const additions = incoming.filter((item) => !existingIds.has(item.id));
+  return [...existing, ...additions];
+};
+
+let seedRefillRequests: RefillRequest[] = [];
+let seedMedicationInventory: MedicationInventory[] = [];
+let seedStockTransactions: StockTransaction[] = [];
+
 
 export const seedData = () => {
+  const rollingVisitSeed = buildRollingVisitSeed();
+
   // Check if data already exists
   if (storageService.get('users')) {
+    const existingUsers = storageService.get<User[]>('users') || [];
+    const existingPatients = storageService.get<Patient[]>('patients') || [];
+
+    storageService.set('users', mergeById(existingUsers, extraSeedUsers));
+    storageService.set('patients', mergeById(existingPatients, extraSeedPatients));
+
+    // Refresh date-sensitive visit data to keep dashboards useful in demos.
+    storageService.set('appointments', rollingVisitSeed.appointments);
+    storageService.set('encounters', rollingVisitSeed.encounters);
+    storageService.set('claims', rollingVisitSeed.claims);
+
     // Backfill newer datasets for existing localStorage installs.
     if (!storageService.get('refill_requests')) {
       storageService.set('refill_requests', seedRefillRequests);
@@ -20,7 +366,7 @@ export const seedData = () => {
       storageService.set('stock_transactions', seedStockTransactions);
     }
 
-    console.log('Data already seeded (migration check complete)');
+    console.log('Data already seeded (rolling visits refreshed)');
     return;
   }
 
@@ -91,7 +437,8 @@ export const seedData = () => {
       phone: '555-0100',
       createdAt: new Date().toISOString(),
       isActive: true
-    }
+    },
+    ...extraSeedUsers
   ];
 
   // Seed Patients
@@ -182,101 +529,15 @@ export const seedData = () => {
       createdAt: new Date().toISOString(),
       createdBy: 'user-3',
       isActive: true
-    }
+    },
+    ...extraSeedPatients
   ];
 
   // Seed Appointments
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-  const appointments: Appointment[] = [
-    {
-      id: 'appt-1',
-      appointmentNumber: 'APT12345001',
-      patientId: 'patient-1',
-      providerId: 'user-1',
-      appointmentType: 'Follow-up',
-      date: todayStr,
-      startTime: '09:00',
-      duration: 30,
-      status: 'Scheduled',
-      reason: 'Blood pressure check',
-      createdAt: new Date().toISOString(),
-      createdBy: 'user-3'
-    },
-    {
-      id: 'appt-2',
-      appointmentNumber: 'APT12345002',
-      patientId: 'patient-2',
-      providerId: 'user-1',
-      appointmentType: 'New Patient',
-      date: todayStr,
-      startTime: '10:00',
-      duration: 60,
-      status: 'Checked-in',
-      reason: 'Annual physical',
-      createdAt: new Date().toISOString(),
-      createdBy: 'user-3'
-    },
-    {
-      id: 'appt-3',
-      appointmentNumber: 'APT12345003',
-      patientId: 'patient-3',
-      providerId: 'user-1',
-      appointmentType: 'Urgent',
-      date: todayStr,
-      startTime: '14:00',
-      duration: 30,
-      status: 'Scheduled',
-      reason: 'Fever and cough',
-      createdAt: new Date().toISOString(),
-      createdBy: 'user-3'
-    },
-    {
-      id: 'appt-4',
-      appointmentNumber: 'APT12345004',
-      patientId: 'patient-1',
-      providerId: 'user-1',
-      appointmentType: 'Follow-up',
-      date: tomorrowStr,
-      startTime: '11:00',
-      duration: 30,
-      status: 'Scheduled',
-      reason: 'Lab results review',
-      createdAt: new Date().toISOString(),
-      createdBy: 'user-3'
-    }
-  ];
+  const appointments = rollingVisitSeed.appointments;
 
   // Seed Encounters
-  const encounters: Encounter[] = [
-    {
-      id: 'enc-1',
-      encounterNumber: 'ENC12345001',
-      patientId: 'patient-1',
-      providerId: 'user-1',
-      appointmentId: 'appt-1',
-      visitDate: todayStr,
-      chiefComplaint: 'Follow-up for hypertension',
-      vitals: {
-        bloodPressure: '138/88',
-        pulse: 78,
-        temperature: 98.6,
-        weight: 185,
-        height: 72
-      },
-      diagnoses: ['Hypertension (High Blood Pressure)'],
-      assessment: 'Blood pressure still elevated. Medication adjustment needed.',
-      plan: 'Increase Lisinopril to 20mg daily. Follow-up in 2 weeks.',
-      status: 'Closed',
-      followUpDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      createdAt: new Date().toISOString(),
-      createdBy: 'user-1'
-    }
-  ];
+  const encounters = rollingVisitSeed.encounters;
 
   // Seed Prescriptions
  const prescriptions: Prescription[] = [
@@ -488,7 +749,7 @@ const labResults: LabResult[] = [
 ];
 
 // Add this after your other seed data
- const seedRefillRequests: RefillRequest[] = [
+ seedRefillRequests = [
   {
     id: 'refill-req-1',
     refillRequestNumber: 'RFR1705920000001',
@@ -530,24 +791,9 @@ const labResults: LabResult[] = [
 ];
 
   // Seed Claims
-  const claims: Claim[] = [
-    {
-      id: 'claim-1',
-      claimNumber: 'CLM12345001',
-      patientId: 'patient-1',
-      encounterId: 'enc-1',
-      visitDate: todayStr,
-      diagnosisCodes: ['Hypertension (High Blood Pressure)'],
-      procedureCodes: ['Office Visit - Established Patient'],
-      totalAmount: 150,
-      insuranceType: 'Private',
-      status: 'Submitted',
-      createdAt: new Date().toISOString(),
-      createdBy: 'user-4'
-    }
-  ];
+  const claims = rollingVisitSeed.claims;
 
- const seedMedicationInventory: MedicationInventory[] = [
+ seedMedicationInventory = [
   {
     id: 'med-1',
     medicationName: 'Amoxicillin',
@@ -669,7 +915,7 @@ const labResults: LabResult[] = [
   }
 ];
 
-const seedStockTransactions: StockTransaction[] = [
+seedStockTransactions = [
   {
     id: 'stock-tx-1',
     medicationId: 'med-1',
