@@ -77,6 +77,7 @@ export const NewClaimPage: React.FC = () => {
   const watchedVisitDate = watch('visitDate');
   const watchedInsuranceType = watch('insuranceType');
   const watchedAmount = watch('totalAmount');
+  const isEncounterLinked = Boolean(watchedEncounterId);
 
   const scrubberResult = useMemo(
     () =>
@@ -160,7 +161,7 @@ export const NewClaimPage: React.FC = () => {
       setSelectedDiagnoses(enc.diagnoses);
       setValue('diagnosisCodes', enc.diagnoses);
     }
-  }, [watchedEncounterId]);
+  }, [watchedEncounterId, encounters, setValue]);
 
   // ── Patient search / select ──────────────────────────────────────────────
   const filteredPatients = patients.filter(p => {
@@ -414,8 +415,14 @@ export const NewClaimPage: React.FC = () => {
               <input
                 type="date"
                 {...register('visitDate')}
-                className="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isEncounterLinked}
+                className="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-500"
               />
+              {isEncounterLinked && (
+                <p className="mt-1 text-xs text-slate-500">
+                  Visit date is locked to the selected encounter.
+                </p>
+              )}
               {errors.visitDate && (
                 <p className="mt-1 text-xs text-red-500 flex items-center">
                   <AlertCircle size={12} className="mr-1" />

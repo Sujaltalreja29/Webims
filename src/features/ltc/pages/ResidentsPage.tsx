@@ -300,7 +300,7 @@ export const ResidentsPage: React.FC = () => {
                     <td className="px-5 py-4 text-right" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-end space-x-2">
                         <button
-                          onClick={() => navigate(`/ltc/care-notes/new?residentId=${resident.id}`)}
+                          onClick={() => navigate(`/ltc/care-notes/new?residentId=${encodeURIComponent(resident.id)}`)}
                           className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 transition-colors"
                         >
                           + Care Note

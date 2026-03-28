@@ -120,22 +120,59 @@ export const NewCareNotePage: React.FC = () => {
   const watchedPainLevel  = watch('painLevel');
   const watchedResidentId = watch('residentId');
 
+  // Keep form state synced with query param when navigating to this route
+  // from pages like Residents without remounting the component.
+  useEffect(() => {
+    if (!prefilledResidentId) return;
+    setValue('residentId', prefilledResidentId, { shouldValidate: true });
+  }, [prefilledResidentId, setValue]);
+
   // ── Load residents ───────────────────────────────────────────────────
   useEffect(() => {
-    residentApi.getActive().then(data => {
-      setResidents(data);
-      if (prefilledResidentId) {
-        const found = data.find(r => r.id === prefilledResidentId);
-        if (found) setSelectedResident(found);
+    const loadResidents = async () => {
+      const activeResidents = await residentApi.getActive();
+
+      if (!prefilledResidentId) {
+        setResidents(activeResidents);
+        return;
       }
-    });
-  }, []);
+
+      const prefilledActiveResident = activeResidents.find(r => r.id === prefilledResidentId);
+      if (prefilledActiveResident) {
+        setResidents(activeResidents);
+        setSelectedResident(prefilledActiveResident);
+        setValue('residentId', prefilledActiveResident.id, { shouldValidate: true });
+        return;
+      }
+
+      const prefilledResident = await residentApi.getById(prefilledResidentId);
+      if (prefilledResident) {
+        setResidents([...activeResidents, prefilledResident]);
+        setSelectedResident(prefilledResident);
+        setValue('residentId', prefilledResident.id, { shouldValidate: true });
+        return;
+      }
+
+      setResidents(activeResidents);
+    };
+
+    loadResidents();
+  }, [prefilledResidentId, setValue]);
 
   // ── Update selected resident ─────────────────────────────────────────
   useEffect(() => {
     const found = residents.find(r => r.id === watchedResidentId);
     setSelectedResident(found || null);
   }, [watchedResidentId, residents]);
+
+  // Re-apply prefilled resident after options are loaded so the native select
+  // renders the selected option consistently.
+  useEffect(() => {
+    if (!prefilledResidentId || residents.length === 0) return;
+    if (residents.some(r => r.id === prefilledResidentId)) {
+      setValue('residentId', prefilledResidentId, { shouldValidate: true });
+    }
+  }, [prefilledResidentId, residents, setValue]);
 
   // ── Submit ───────────────────────────────────────────────────────────
   const onSubmit = async (data: FormData) => {

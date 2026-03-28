@@ -39,6 +39,13 @@ export const CareNotesPage: React.FC = () => {
   const [filterDate, setFilterDate] = useState('');
   const [loading, setLoading]       = useState(true);
 
+  const handleCreateCareNote = () => {
+    const target = filterResident !== 'All'
+      ? `/ltc/care-notes/new?residentId=${filterResident}`
+      : '/ltc/care-notes/new';
+    navigate(target);
+  };
+
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
@@ -103,7 +110,7 @@ export const CareNotesPage: React.FC = () => {
           <p className="text-slate-600 mt-1">Daily care documentation for all residents</p>
         </div>
         <button
-          onClick={() => navigate('/ltc/care-notes/new')}
+          onClick={handleCreateCareNote}
           className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2 font-medium text-sm"
         >
           <Plus size={18} />

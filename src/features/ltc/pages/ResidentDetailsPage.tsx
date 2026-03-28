@@ -6,7 +6,6 @@ import {
   ArrowLeft, Edit2, Plus, Heart, User,
   Phone, Building2, Activity, AlertTriangle,
   Calendar, FileText, ChevronRight, Clock,
-  CheckCircle, Pill
 } from 'lucide-react';
 import { format, differenceInYears } from 'date-fns';
 import { toast } from 'sonner';
@@ -41,7 +40,7 @@ export const ResidentDetailsPage: React.FC = () => {
 
   const [resident, setResident]   = useState<Resident | null>(null);
   const [careNotes, setCareNotes] = useState<CareNote[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'care-notes' | 'medications'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'care-notes'>('overview');
   const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
@@ -205,8 +204,7 @@ export const ResidentDetailsPage: React.FC = () => {
         <div className="flex space-x-1">
           {([
             { key: 'overview',    label: 'Overview',    icon: User },
-            { key: 'care-notes',  label: 'Care Notes',  icon: FileText },
-            { key: 'medications', label: 'Medications', icon: Pill }
+            { key: 'care-notes',  label: 'Care Notes',  icon: FileText }
           ] as const).map(tab => (
             <button
               key={tab.key}
@@ -521,101 +519,6 @@ export const ResidentDetailsPage: React.FC = () => {
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════
-           TAB: MEDICATIONS
-      ══════════════════════════════════════════════════════════════ */}
-      {activeTab === 'medications' && (
-        <div className="space-y-4">
-          {/* Pull medication data from latest care notes */}
-          {careNotes.length === 0 || !careNotes.some(n => n.medications.length > 0) ? (
-            <div className="bg-white rounded-lg border border-slate-200 py-16 text-center">
-              <Pill size={48} className="mx-auto text-slate-300 mb-3" />
-              <p className="text-slate-500 font-medium">No medication records</p>
-              <p className="text-slate-400 text-sm mt-1">
-                Medication administration is recorded in care notes
-              </p>
-              <button
-                onClick={() => navigate(`/ltc/care-notes/new?residentId=${resident.id}`)}
-                className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
-              >
-                Create Care Note
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-sm text-slate-500">
-                Medication administration history from care notes
-              </p>
-              {careNotes
-                .filter(n => n.medications.length > 0)
-                .slice(0, 10)
-                .map(note => (
-                  <div key={note.id} className="bg-white rounded-lg border border-slate-200 p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        <Calendar size={14} className="text-slate-400" />
-                        <span className="text-sm font-semibold text-slate-700">
-                          {format(new Date(note.date), 'MMM dd, yyyy')}
-                        </span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          note.shift === 'Day'     ? 'bg-yellow-100 text-yellow-700' :
-                          note.shift === 'Evening' ? 'bg-orange-100 text-orange-700' :
-                          'bg-indigo-100 text-indigo-700'
-                        }`}>
-                          {note.shift} Shift
-                        </span>
-                      </div>
-                      <span className="text-xs text-slate-500">{note.caregiverName}</span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {note.medications.map((med, i) => (
-                        <div
-                          key={i}
-                          className={`flex items-center justify-between p-3 rounded-lg border text-sm ${
-                            med.administered
-                              ? 'bg-green-50 border-green-200'
-                              : 'bg-red-50 border-red-200'
-                          }`}
-                        >
-                          <div className="flex items-center space-x-3">
-                            {med.administered
-                              ? <CheckCircle size={16} className="text-green-500 flex-shrink-0" />
-                              : <AlertTriangle size={16} className="text-red-500 flex-shrink-0" />
-                            }
-                            <div>
-                              <p className="font-medium text-slate-800">
-                                {med.medicationName} — {med.dosage}
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                Scheduled: {med.scheduledTime}
-                                {med.administeredTime && ` · Given: ${med.administeredTime}`}
-                              </p>
-                              {med.refusedReason && (
-                                <p className="text-xs text-red-600 mt-0.5">
-                                  Refused: {med.refusedReason}
-                                </p>
-                              )}
-                              {med.notes && (
-                                <p className="text-xs text-slate-500 mt-0.5">{med.notes}</p>
-                              )}
-                            </div>
-                          </div>
-                          <span className={`text-xs font-semibold ${
-                            med.administered ? 'text-green-700' : 'text-red-600'
-                          }`}>
-                            {med.administered ? 'Given' : 'Not Given'}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
             </div>
           )}
         </div>
